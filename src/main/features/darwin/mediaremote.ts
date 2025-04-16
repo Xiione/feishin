@@ -1,5 +1,5 @@
 // @ts-ignore
-import MediaService from 'electron-media-service';
+import MediaService from '@xiione/electron-media-service';
 import { ipcMain } from 'electron';
 // import Player from 'mpris-service';
 import { PlayerStatus } from '../../../renderer/types';
@@ -7,19 +7,14 @@ import { getMainWindow } from '../../main';
 import { QueueSong } from '/@/renderer/api/types';
 
 async function fetchImageToBase64(url: string): Promise<string> {
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+    const res = await fetch(url);
+    if (!res.ok) {
+        throw new Error(`Failed to fetch image: ${res.status} ${res.statusText}`);
     }
-    const contentType = response.headers.get('content-type') || 'image/jpeg';
-    const arrayBuffer = await response.arrayBuffer();
-    let binary = '';
-    const bytes = new Uint8Array(arrayBuffer);
-    for (let i = 0; i < bytes.byteLength; i += 1) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    const base64Data = btoa(binary);
-    return `data:${contentType};base64,${base64Data}`;
+    const contentType = res.headers.get('content-type') || 'image/jpeg';
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const binary = bytes.reduce((acc, byte) => acc + String.fromCharCode(byte), '');
+    return `data:${contentType};base64,${btoa(binary)}`;
 }
 
 interface Metadata {
@@ -90,17 +85,25 @@ ipcMain.on('update-song', async (_event, song: QueueSong | undefined) => {
             return;
         }
 
-        const base64Url =
-            song.imageUrl !== metadataCur.albumArtUrl
-                ? song.imageUrl
-                    ? await fetchImageToBase64(song.imageUrl)
-                    : ''
-                : metadataCur.albumArt;
+        let artUrl = song.imageUrl ?? '';
+
+        if (song.imageUrl !== metadataCur.albumArtUrl) {
+            if (song.imageUrl && !/^data:.*;base64,/.test(artUrl)) {
+                try {
+                    artUrl = await fetchImageToBase64(song.imageUrl);
+                } catch (err) {
+                    console.log('Failed to fetch album art via url');
+                }
+            }
+        } else {
+            artUrl = metadataCur.albumArt; // maintain same encoded art
+        }
+
         metadataCur = {
             title: song.name ?? '',
             artist: song.artists?.length ? song.artists.map((a) => a.name).join(', ') : '',
             album: song.album ?? '',
-            albumArt: base64Url,
+            albumArt: artUrl,
             albumArtUrl: song.imageUrl ?? '',
             state: metadataCur.state,
             id: 1,

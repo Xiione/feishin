@@ -13,7 +13,7 @@
         "postinstall": "npm run electron-rebuild && npm run link-modules"
     },
     "dependencies": {
-        "electron-media-service": "file:../../../electron-media-service",
+        "@xiione/electron-media-service": "^0.2.3",
         "cheerio": "^1.0.0-rc.12",
         "mpris-service": "^2.1.2",
         "ws": "^8.18.0"
