@@ -19,7 +19,7 @@
         "ws": "^8.18.0"
     },
     "devDependencies": {
-        "electron": "31.1.0"
+        "electron": "^33.3.1"
     },
     "license": "GPL-3.0"
 }
