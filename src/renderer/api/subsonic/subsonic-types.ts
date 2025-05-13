@@ -156,12 +156,13 @@ const albumListParameters = z.object({
 const albumList = z.array(album.omit({ song: true }));
 
 const albumArtist = z.object({
-    album: z.array(album),
+    album: z.array(album).optional(),
     albumCount: z.string(),
     artistImageUrl: z.string().optional(),
     coverArt: z.string().optional(),
     id,
     name: z.string(),
+    roles: z.array(z.string()).optional(),
     starred: z.string().optional(),
 });
 
@@ -175,6 +176,7 @@ const artistListEntry = albumArtist.pick({
     coverArt: true,
     id: true,
     name: true,
+    roles: true,
     starred: true,
 });
 

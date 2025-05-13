@@ -1,6 +1,6 @@
 {
     "name": "feishin",
-    "version": "0.12.3",
+    "version": "0.12.7",
     "description": "",
     "main": "./dist/main/main.js",
     "author": {
@@ -13,13 +13,19 @@
         "postinstall": "npm run electron-rebuild && npm run link-modules"
     },
     "dependencies": {
-        "electron": "^33.3.1",
+        "electron": "36.1.0",
         "@xiione/electron-media-service": "^0.2.3",
         "cheerio": "^1.0.0-rc.12",
         "mpris-service": "^2.1.2",
         "ws": "^8.18.0"
     },
     "devDependencies": {
+    },
+    "resolutions": {
+        "xml2js": "0.5.0"
+    },
+    "overrides": {
+        "xml2js": "0.5.0"
     },
     "license": "GPL-3.0"
 }
