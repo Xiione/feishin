@@ -13,14 +13,13 @@
         "postinstall": "npm run electron-rebuild && npm run link-modules"
     },
     "dependencies": {
-        "electron": "^33.3.1",
+        "electron": "36.1.0",
         "@xiione/electron-media-service": "^0.2.3",
         "cheerio": "^1.0.0-rc.12",
         "mpris-service": "^2.1.2",
         "ws": "^8.18.0"
     },
     "devDependencies": {
-        "electron": "36.1.0"
     },
     "resolutions": {
         "xml2js": "0.5.0"
