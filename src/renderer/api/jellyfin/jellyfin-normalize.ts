@@ -236,7 +236,6 @@ const normalizeAlbum = (
         })),
         id: item.Id,
         imagePlaceholderUrl: null,
-        participants: null,
         imageUrl: getAlbumCoverArtUrl({
             baseUrl: server?.url || '',
             item,
@@ -248,6 +247,7 @@ const normalizeAlbum = (
         mbzId: item.ProviderIds?.MusicBrainzAlbum || null,
         name: item.Name,
         originalDate: null,
+        participants: null,
         playCount: item.UserData?.PlayCount || 0,
         releaseDate: item.PremiereDate?.split('T')[0] || null,
         releaseYear: item.ProductionYear || null,
@@ -284,7 +284,7 @@ const normalizeAlbumArtist = (
         ) || [];
 
     return {
-        albumCount: null,
+        albumCount: item.AlbumCount ?? null,
         backgroundImageUrl: null,
         biography: item.Overview || null,
         duration: item.RunTimeTicks / 10000,
@@ -308,7 +308,7 @@ const normalizeAlbumArtist = (
         serverId: server?.id || '',
         serverType: ServerType.JELLYFIN,
         similarArtists,
-        songCount: null,
+        songCount: item.SongCount ?? null,
         userFavorite: item.UserData?.IsFavorite || false,
         userRating: null,
     };

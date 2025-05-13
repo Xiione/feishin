@@ -190,7 +190,7 @@ export const SubsonicController: ControllerEndpoint = {
 
         return {
             ...ssNormalize.albumArtist(artist, apiClientProps.server, 300),
-            albums: artist.album.map((album) => ssNormalize.album(album, apiClientProps.server)),
+            albums: artist.album?.map((album) => ssNormalize.album(album, apiClientProps.server)),
             similarArtists:
                 artistInfo?.similarArtist?.map((artist) =>
                     ssNormalize.albumArtist(artist, apiClientProps.server, 300),
@@ -305,7 +305,7 @@ export const SubsonicController: ControllerEndpoint = {
                     return [];
                 }
 
-                return artist.body.artist.album;
+                return artist.body.artist.album ?? [];
             });
 
             return {
@@ -515,6 +515,51 @@ export const SubsonicController: ControllerEndpoint = {
 
         return totalRecordCount;
     },
+    getArtistList: async (args) => {
+        const { query, apiClientProps } = args;
+
+        const res = await ssApiClient(apiClientProps).getArtists({
+            query: {
+                musicFolderId: query.musicFolderId,
+            },
+        });
+
+        if (res.status !== 200) {
+            throw new Error('Failed to get artist list');
+        }
+
+        let artists = (res.body.artists?.index || []).flatMap((index) => index.artist);
+        console.log(artists.length);
+        if (query.role) {
+            artists = artists.filter(
+                (artist) => !artist.roles || artist.roles.includes(query.role!),
+            );
+        }
+
+        let results = artists.map((artist) =>
+            ssNormalize.albumArtist(artist, apiClientProps.server, 300),
+        );
+
+        if (query.searchTerm) {
+            const searchResults = filter(results, (artist) => {
+                return artist.name.toLowerCase().includes(query.searchTerm!.toLowerCase());
+            });
+
+            results = searchResults;
+        }
+
+        if (query.sortBy) {
+            results = sortAlbumArtistList(results, query.sortBy, query.sortOrder);
+        }
+
+        return {
+            items: results,
+            startIndex: query.startIndex,
+            totalRecordCount: results?.length || 0,
+        };
+    },
+    getArtistListCount: async (args) =>
+        SubsonicController.getArtistList(args).then((res) => res!.totalRecordCount!),
     getDownloadUrl: (args) => {
         const { apiClientProps, query } = args;
 
@@ -711,6 +756,32 @@ export const SubsonicController: ControllerEndpoint = {
             totalRecordCount: res.body.randomSongs?.song?.length || 0,
         };
     },
+    getRoles: async (args) => {
+        const { apiClientProps } = args;
+
+        const res = await ssApiClient(apiClientProps).getArtists({});
+
+        if (res.status !== 200) {
+            throw new Error('Failed to get artist list');
+        }
+
+        const roles = new Set<string>();
+
+        for (const index of res.body.artists?.index || []) {
+            for (const artist of index.artist) {
+                for (const role of artist.roles || []) {
+                    roles.add(role);
+                }
+            }
+        }
+
+        const final: Array<string | { label: string; value: string }> = Array.from(roles).sort();
+        // Always add 'all artist' filter, even if there are no other roles
+        // This is relevant when switching from a server which has roles to one with
+        // no roles.
+        final.splice(0, 0, { label: 'all artists', value: '' });
+        return final;
+    },
     getServerInfo: async (args) => {
         const { apiClientProps } = args;
 
@@ -864,7 +935,9 @@ export const SubsonicController: ControllerEndpoint = {
             };
         }
 
-        if (query.albumIds || query.artistIds) {
+        const artistIds = query.albumArtistIds || query.artistIds;
+
+        if (query.albumIds || artistIds) {
             if (query.albumIds) {
                 for (const albumId of query.albumIds) {
                     fromAlbumPromises.push(
@@ -877,8 +950,8 @@ export const SubsonicController: ControllerEndpoint = {
                 }
             }
 
-            if (query.artistIds) {
-                for (const artistId of query.artistIds) {
+            if (artistIds) {
+                for (const artistId of artistIds) {
                     artistDetailPromises.push(
                         ssApiClient(apiClientProps).getArtist({
                             query: {
@@ -895,7 +968,7 @@ export const SubsonicController: ControllerEndpoint = {
                         return [];
                     }
 
-                    return artist.body.artist.album;
+                    return artist.body.artist.album ?? [];
                 });
 
                 const albumIds = albums.map((album) => album.id);
@@ -1230,6 +1303,7 @@ export const SubsonicController: ControllerEndpoint = {
 
         return null;
     },
+
     search: async (args) => {
         const { query, apiClientProps } = args;
 
@@ -1296,109 +1370,3 @@ export const SubsonicController: ControllerEndpoint = {
         return null;
     },
 };
-
-// export const getAlbumArtistDetail = async (
-//   args: AlbumArtistDetailArgs,
-// ): Promise<SSAlbumArtistDetail> => {
-//   const { server, signal, query } = args;
-//   const defaultParams = getDefaultParams(server);
-
-//   const searchParams: SSAlbumArtistDetailParams = {
-//     id: query.id,
-//     ...defaultParams,
-//   };
-
-//   const data = await api
-//     .get('/getArtist.view', {
-//       prefixUrl: server?.url,
-//       searchParams,
-//       signal,
-//     })
-//     .json<SSAlbumArtistDetailResponse>();
-
-//   return data.artist;
-// };
-
-// const getAlbumArtistList = async (args: AlbumArtistListArgs): Promise<SSAlbumArtistList> => {
-//   const { signal, server, query } = args;
-//   const defaultParams = getDefaultParams(server);
-
-//   const searchParams: SSAlbumArtistListParams = {
-//     musicFolderId: query.musicFolderId,
-//     ...defaultParams,
-//   };
-
-//   const data = await api
-//     .get('rest/getArtists.view', {
-//       prefixUrl: server?.url,
-//       searchParams,
-//       signal,
-//     })
-//     .json<SSAlbumArtistListResponse>();
-
-//   const artists = (data.artists?.index || []).flatMap((index: SSArtistIndex) => index.artist);
-
-//   return {
-//     items: artists,
-//     startIndex: query.startIndex,
-//     totalRecordCount: null,
-//   };
-// };
-
-// const getGenreList = async (args: GenreListArgs): Promise<SSGenreList> => {
-//   const { server, signal } = args;
-//   const defaultParams = getDefaultParams(server);
-
-//   const data = await api
-//     .get('rest/getGenres.view', {
-//       prefixUrl: server?.url,
-//       searchParams: defaultParams,
-//       signal,
-//     })
-//     .json<SSGenreListResponse>();
-
-//   return data.genres.genre;
-// };
-
-// const getAlbumDetail = async (args: AlbumDetailArgs): Promise<SSAlbumDetail> => {
-//   const { server, query, signal } = args;
-//   const defaultParams = getDefaultParams(server);
-
-//   const searchParams = {
-//     id: query.id,
-//     ...defaultParams,
-//   };
-
-//   const data = await api
-//     .get('rest/getAlbum.view', {
-//       prefixUrl: server?.url,
-//       searchParams: parseSearchParams(searchParams),
-//       signal,
-//     })
-//     .json<SSAlbumDetailResponse>();
-
-//   const { song: songs, ...dataWithoutSong } = data.album;
-//   return { ...dataWithoutSong, songs };
-// };
-
-// const getAlbumList = async (args: AlbumListArgs): Promise<SSAlbumList> => {
-//   const { server, query, signal } = args;
-//   const defaultParams = getDefaultParams(server);
-
-//   const searchParams = {
-//     ...defaultParams,
-//   };
-//   const data = await api
-//     .get('rest/getAlbumList2.view', {
-//       prefixUrl: server?.url,
-//       searchParams: parseSearchParams(searchParams),
-//       signal,
-//     })
-//     .json<SSAlbumListResponse>();
-
-//   return {
-//     items: data.albumList2.album,
-//     startIndex: query.startIndex,
-//     totalRecordCount: null,
-//   };
-// };

@@ -494,6 +494,7 @@ export interface SongListQuery extends BaseQuery<SongListSort> {
         jellyfin?: Partial<z.infer<typeof jfType._parameters.songList>>;
         navidrome?: Partial<z.infer<typeof ndType._parameters.songList>>;
     };
+    albumArtistIds?: string[];
     albumIds?: string[];
     artistIds?: string[];
     favorite?: boolean;
@@ -503,6 +504,7 @@ export interface SongListQuery extends BaseQuery<SongListSort> {
     maxYear?: number;
     minYear?: number;
     musicFolderId?: string;
+    role?: string;
     searchTerm?: string;
     startIndex: number;
 }
@@ -672,7 +674,7 @@ export type AlbumArtistDetailQuery = { id: string };
 export type AlbumArtistDetailArgs = { query: AlbumArtistDetailQuery } & BaseEndpointArgs;
 
 // Artist List
-export type ArtistListResponse = BasePaginatedResponse<Artist[]> | null | undefined;
+export type ArtistListResponse = BasePaginatedResponse<AlbumArtist[]> | null | undefined;
 
 export enum ArtistListSort {
     ALBUM = 'album',
@@ -695,6 +697,8 @@ export interface ArtistListQuery extends BaseQuery<ArtistListSort> {
     };
     limit?: number;
     musicFolderId?: string;
+    role?: string;
+    searchTerm?: string;
     startIndex: number;
 }
 
@@ -1245,7 +1249,8 @@ export type ControllerEndpoint = {
     getAlbumList: (args: AlbumListArgs) => Promise<AlbumListResponse>;
     getAlbumListCount: (args: AlbumListArgs) => Promise<number>;
     // getArtistInfo?: (args: any) => void;
-    // getArtistList?: (args: ArtistListArgs) => Promise<ArtistListResponse>;
+    getArtistList: (args: ArtistListArgs) => Promise<ArtistListResponse>;
+    getArtistListCount: (args: ArtistListArgs) => Promise<number>;
     getDownloadUrl: (args: DownloadArgs) => string;
     getGenreList: (args: GenreListArgs) => Promise<GenreListResponse>;
     getLyrics?: (args: LyricsArgs) => Promise<LyricsResponse>;
@@ -1255,6 +1260,7 @@ export type ControllerEndpoint = {
     getPlaylistListCount: (args: PlaylistListArgs) => Promise<number>;
     getPlaylistSongList: (args: PlaylistSongListArgs) => Promise<SongListResponse>;
     getRandomSongList: (args: RandomSongListArgs) => Promise<SongListResponse>;
+    getRoles: (args: BaseEndpointArgs) => Promise<Array<string | { label: string; value: string }>>;
     getServerInfo: (args: ServerInfoArgs) => Promise<ServerInfo>;
     getSimilarSongs: (args: SimilarSongsArgs) => Promise<Song[]>;
     getSongDetail: (args: SongDetailArgs) => Promise<SongDetailResponse>;
@@ -1417,7 +1423,7 @@ export const sortSongList = (songs: QueueSong[], sortBy: SongListSort, sortOrder
 
 export const sortAlbumArtistList = (
     artists: AlbumArtist[],
-    sortBy: AlbumArtistListSort,
+    sortBy: AlbumArtistListSort | ArtistListSort,
     sortOrder: SortOrder,
 ) => {
     const order = sortOrder === SortOrder.ASC ? 'asc' : 'desc';
