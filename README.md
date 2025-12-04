@@ -59,15 +59,27 @@ For media keys to work, you will be prompted to allow Feishin to be a Trusted Ac
 
 #### Linux Notes
 
-If you're using a Linux device, a `.desktop` file is recommended for easy launching of Feishin.
+We provide a small install script to download the latest `.AppImage`, make it executable, and also download the icons required by Desktop Environments. Finally, it generates a `.desktop` file to add Feishin to your Application Launcher.
 
-Download the [latest release (AppImage)](https://github.com/jeffvli/feishin/releases) and [application icon](https://github.com/jeffvli/feishin/blob/development/resources/icon.png?raw=true) to your `~/applications/` folder. This folder may need to be created if it does not already exist.
+Simply run the installer like this:
+```sh
+dir=/your/application/directory
+curl 'https://raw.githubusercontent.com/jeffvli/feishin/refs/heads/development/install-feishin-appimage' | sh -s -- "$dir"
+```
 
-Rename the icon to `Feishin-linux-x86_64.png`.
+The script also has an option to add launch arguments to run Feishin in native Wayland mode. Note that this is experimental in Electron and therefore not officially supported. If you want to use it, run this instead:
+```sh
+dir=/your/application/directory
+curl 'https://raw.githubusercontent.com/jeffvli/feishin/refs/heads/development/install-feishin-appimage' | sh -s -- "$dir" wayland-native
+```
 
-Save the [example desktop file](https://raw.githubusercontent.com/jeffvli/feishin/refs/heads/development/feishin.desktop) as `~/.local/share/applications/feishin.desktop`.
+It also provides a simple uninstall routine, removing the downloaded files:
+```sh
+dir=/your/application/directory
+curl 'https://raw.githubusercontent.com/jeffvli/feishin/refs/heads/development/install-feishin-appimage' | sh -s -- "$dir" remove
+```
 
-You will now see Feishin show up in your menu. The properties in the example desktop file may need to be modified to match your system.
+The entry should show up in your Application Launcher immediately. If it does not, simply log out, wait 10 seconds, and log back in. Your Desktop Environment may alternatively provide a way to reload entries.
 
 ### Web and Docker
 
@@ -86,7 +98,7 @@ docker run --name feishin -p 9180:9180 feishin
 
 #### Docker Compose
 
-To install via Docker Compose use the following snippit. This also works on Portainer.
+To install via Docker Compose, use the following snippet. This also works on Portainer.
 
 ```yaml
 services:
@@ -114,7 +126,7 @@ services:
 2. After restarting the app, you will be prompted to select a server. Click the `Open menu` button and select `Manage servers`. Click the `Add server` button in the popup and fill out all applicable details. You will need to enter the full URL to your server, including the protocol and port if applicable (e.g. `https://navidrome.my-server.com` or `http://192.168.0.1:4533`).
 
 - **Navidrome** - For the best experience, select "Save password" when creating the server and configure the `SessionTimeout` setting in your Navidrome config to a larger value (e.g. 72h).
-    - **Linux users** - The default password store uses `libsecret`. `kwallet4/5/6` are also supported, but must be explicitly set in Settings > Window > Passwords/secret score.
+    - **Linux users** - The default password store uses `libsecret`. `kwallet4/5/6` are also supported, but must be explicitly set in Settings > Window > Passwords/secret store.
 
 3. _Optional_ - If you want to host Feishin on a subpath (not `/`), then pass in the following environment variable: `PUBLIC_PATH=PATH`. For example, to host on `/feishin`, pass in `PUBLIC_PATH=/feishin`.
 
@@ -153,7 +165,7 @@ chmod 4755 chrome-sandbox
 sudo chown root:root chrome-sandbox
 ```
 
-Ubunutu 24.04 specifically introduced breaking changes that affect how namespaces work. Please see https://discourse.ubuntu.com/t/ubuntu-24-04-lts-noble-numbat-release-notes/39890#:~:text=security%20improvements%20 for possible fixes.
+Ubuntu 24.04 specifically introduced breaking changes that affect how namespaces work. Please see https://discourse.ubuntu.com/t/ubuntu-24-04-lts-noble-numbat-release-notes/39890#:~:text=security%20improvements%20 for possible fixes.
 
 ## Development
 

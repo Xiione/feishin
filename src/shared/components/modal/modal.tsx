@@ -12,6 +12,7 @@ import { Button } from '/@/shared/components/button/button';
 import { Flex } from '/@/shared/components/flex/flex';
 import { Group } from '/@/shared/components/group/group';
 import { Icon } from '/@/shared/components/icon/icon';
+import { ScrollArea } from '/@/shared/components/scroll-area/scroll-area';
 import { Stack } from '/@/shared/components/stack/stack';
 
 export interface ModalProps extends Omit<MantineModalProps, 'onClose'> {
@@ -27,20 +28,32 @@ export const Modal = ({ children, classNames, handlers, ...rest }: ModalProps) =
     return (
         <MantineModal
             {...rest}
+            centered={true}
             classNames={{
                 body: styles.body,
+                close: styles.close,
                 content: styles.content,
                 header: styles.header,
+                inner: styles.inner,
+                overlay: styles.overlay,
                 root: styles.root,
                 title: styles.title,
                 ...classNames,
             }}
+            closeButtonProps={{
+                icon: <Icon icon="x" size="xl" />,
+            }}
             onClose={handlers.close}
-            radius="lg"
+            overlayProps={{
+                backgroundOpacity: 0.5,
+                blur: 1,
+            }}
+            radius="xl"
+            scrollAreaComponent={ScrollArea}
             transitionProps={{
                 duration: 300,
                 exitDuration: 300,
-                transition: 'fade',
+                transition: 'fade' as const,
             }}
         >
             {children}
@@ -93,10 +106,16 @@ export const ConfirmModal = ({
         <Stack>
             <Flex>{children}</Flex>
             <Group justify="flex-end">
-                <Button data-focus onClick={handleCancel} variant="default">
+                <Button onClick={handleCancel} variant="default">
                     {labels?.cancel ? labels.cancel : 'Cancel'}
                 </Button>
-                <Button disabled={disabled} loading={loading} onClick={onConfirm} variant="filled">
+                <Button
+                    data-autofocus
+                    disabled={disabled}
+                    loading={loading}
+                    onClick={onConfirm}
+                    variant="filled"
+                >
                     {labels?.confirm ? labels.confirm : 'Confirm'}
                 </Button>
             </Group>
@@ -113,15 +132,23 @@ export const ModalsProvider = ({ children, ...rest }: ModalsProviderProps) => {
                 centered: true,
                 classNames: {
                     body: styles.body,
+                    close: styles.close,
                     content: styles.content,
                     header: styles.header,
+                    inner: styles.inner,
+                    overlay: styles.overlay,
                     root: styles.root,
                     title: styles.title,
                 },
                 closeButtonProps: {
-                    icon: <Icon icon="x" />,
+                    icon: <Icon icon="x" size="xl" />,
                 },
-                radius: 'lg',
+                overlayProps: {
+                    backgroundOpacity: 0.5,
+                    blur: 1,
+                },
+                radius: 'xl',
+                scrollAreaComponent: ScrollArea,
                 transitionProps: {
                     duration: 300,
                     exitDuration: 300,

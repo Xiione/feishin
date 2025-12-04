@@ -1,29 +1,38 @@
 import { SetActivity, StatusDisplayType } from '@xhayper/discord-rpc';
 import isElectron from 'is-electron';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { controller } from '/@/renderer/api/controller';
 import {
     DiscordDisplayType,
     DiscordLinkType,
-    getServerById,
     useAppStore,
     useDiscordSettings,
     useGeneralSettings,
     usePlayerStore,
+    useTimestampStoreBase,
 } from '/@/renderer/store';
 import { sentenceCase } from '/@/renderer/utils';
+import { LogCategory, logFn } from '/@/renderer/utils/logger';
+import { logMsg } from '/@/renderer/utils/logger-message';
 import { QueueSong, ServerType } from '/@/shared/types/domain-types';
 import { PlayerStatus } from '/@/shared/types/types';
 
 const discordRpc = isElectron() ? window.api.discordRpc : null;
 type ActivityState = [QueueSong | undefined, number, PlayerStatus];
 
+const MAX_FIELD_LENGTH = 127;
+
+const truncate = (field: string) =>
+    field.length <= MAX_FIELD_LENGTH ? field : field.substring(0, MAX_FIELD_LENGTH - 1) + '…';
+
 export const useDiscordRpc = () => {
     const discordSettings = useDiscordSettings();
     const generalSettings = useGeneralSettings();
-    const { privateMode } = useAppStore();
+    const privateMode = useAppStore((state) => state.privateMode);
     const [lastUniqueId, setlastUniqueId] = useState('');
+
+    const previousEnabledRef = useRef<boolean>(discordSettings.enabled);
 
     const setActivity = useCallback(
         async (current: ActivityState, previous: ActivityState) => {
@@ -32,12 +41,28 @@ export const useDiscordRpc = () => {
                 current[1] === 0 || // Start of track
                 (current[2] === 'paused' && !discordSettings.showPaused) // Track paused with show paused setting disabled
             ) {
+                let reason: string;
+                if (!current[0]) {
+                    reason = 'no_track';
+                } else if (current[1] === 0) {
+                    reason = 'start_of_track';
+                } else {
+                    reason = 'paused_with_show_paused_disabled';
+                }
+
+                logFn.debug(logMsg[LogCategory.EXTERNAL].discordRpcActivityCleared, {
+                    category: LogCategory.EXTERNAL,
+                    meta: {
+                        reason,
+                        status: current[2],
+                    },
+                });
                 return discordRpc?.clearActivity();
             }
 
             // Handle change detection
             const song = current[0];
-            const trackChanged = lastUniqueId !== song.uniqueId;
+            const trackChanged = lastUniqueId !== song._uniqueId;
 
             /*
                 1. If the song has just started, update status
@@ -52,8 +77,39 @@ export const useDiscordRpc = () => {
                 current[2] !== previous[2]
             ) {
                 if (trackChanged) {
-                    setlastUniqueId(song.uniqueId);
+                    logFn.debug(logMsg[LogCategory.EXTERNAL].discordRpcTrackChanged, {
+                        category: LogCategory.EXTERNAL,
+                        meta: {
+                            artistName: song.artists?.[0]?.name,
+                            songId: song._uniqueId,
+                            songName: song.name,
+                        },
+                    });
+                    setlastUniqueId(song._uniqueId);
                 }
+
+                let reason: string;
+                if (previous[1] === 0) {
+                    reason = 'song_started';
+                } else if (Math.abs(current[1] - previous[1]) > 1.2) {
+                    reason = 'time_jump';
+                } else if (trackChanged) {
+                    reason = 'track_changed';
+                } else {
+                    reason = 'player_state_changed';
+                }
+
+                logFn.debug(logMsg[LogCategory.EXTERNAL].discordRpcActivityUpdate, {
+                    category: LogCategory.EXTERNAL,
+                    meta: {
+                        currentStatus: current[2],
+                        currentTime: current[1],
+                        previousStatus: previous[2],
+                        previousTime: previous[1],
+                        reason,
+                        trackChanged,
+                    },
+                });
 
                 const start = Math.round(Date.now() - current[1] * 1000);
                 const end = Math.round(start + song.duration);
@@ -67,13 +123,15 @@ export const useDiscordRpc = () => {
                 };
 
                 const activity: SetActivity = {
-                    details: (song?.name && song.name.padEnd(2, ' ')) || 'Idle',
+                    details: truncate((song?.name && song.name.padEnd(2, ' ')) || 'Idle'),
                     instance: false,
                     largeImageKey: undefined,
-                    largeImageText: (song?.album && song.album.padEnd(2, ' ')) || 'Unknown album',
+                    largeImageText: truncate(
+                        (song?.album && song.album.padEnd(2, ' ')) || 'Unknown album',
+                    ),
                     smallImageKey: undefined,
                     smallImageText: sentenceCase(current[2]),
-                    state: (artists && artists.padEnd(2, ' ')) || 'Unknown artist',
+                    state: truncate((artists && artists.padEnd(2, ' ')) || 'Unknown artist'),
                     statusDisplayType: statusDisplayMap[discordSettings.displayType],
                     // I would love to use the actual type as opposed to hardcoding to 2,
                     // but manually installing the discord-types package appears to break things
@@ -120,14 +178,12 @@ export const useDiscordRpc = () => {
                 }
 
                 if (discordSettings.showServerImage && song) {
-                    if (song.serverType === ServerType.JELLYFIN && song.imageUrl) {
+                    if (song._serverType === ServerType.JELLYFIN && song.imageUrl) {
                         activity.largeImageKey = song.imageUrl;
-                    } else if (song.serverType === ServerType.NAVIDROME) {
-                        const server = getServerById(song.serverId);
-
+                    } else if (song._serverType === ServerType.NAVIDROME) {
                         try {
                             const info = await controller.getAlbumInfo({
-                                apiClientProps: { server },
+                                apiClientProps: { serverId: song._serverId },
                                 query: { id: song.albumId },
                             });
 
@@ -165,10 +221,41 @@ export const useDiscordRpc = () => {
                 // Initialize if needed
                 const isConnected = await discordRpc?.isConnected();
                 if (!isConnected) {
+                    logFn.debug(logMsg[LogCategory.EXTERNAL].discordRpcInitialized, {
+                        category: LogCategory.EXTERNAL,
+                        meta: {
+                            clientId: discordSettings.clientId,
+                        },
+                    });
                     await discordRpc?.initialize(discordSettings.clientId);
                 }
 
+                logFn.debug(logMsg[LogCategory.EXTERNAL].discordRpcSetActivity, {
+                    category: LogCategory.EXTERNAL,
+                    meta: {
+                        albumName: song.album,
+                        artistName: song.artists?.[0]?.name,
+                        displayType: discordSettings.displayType,
+                        hasLargeImage: !!activity.largeImageKey,
+                        hasTimestamps: !!(activity.startTimestamp && activity.endTimestamp),
+                        showAsListening: discordSettings.showAsListening,
+                        songName: song.name,
+                        status: current[2],
+                    },
+                });
                 discordRpc?.setActivity(activity);
+            } else {
+                logFn.debug(logMsg[LogCategory.EXTERNAL].discordRpcUpdateSkipped, {
+                    category: LogCategory.EXTERNAL,
+                    meta: {
+                        currentStatus: current[2],
+                        currentTime: current[1],
+                        previousStatus: previous[2],
+                        previousTime: previous[1],
+                        timeDiff: Math.abs(current[1] - previous[1]),
+                        trackChanged,
+                    },
+                });
             }
         },
         [
@@ -183,30 +270,46 @@ export const useDiscordRpc = () => {
         ],
     );
 
+    // Quit Discord RPC if it was enabled and is now disabled
     useEffect(() => {
-        if (!discordSettings.enabled || privateMode) {
+        if ((!discordSettings.enabled || privateMode) && Boolean(previousEnabledRef.current)) {
+            logFn.info(logMsg[LogCategory.EXTERNAL].discordRpcQuit, {
+                category: LogCategory.EXTERNAL,
+                meta: {
+                    enabled: discordSettings.enabled,
+                    privateMode,
+                },
+            });
+
+            previousEnabledRef.current = false;
+
             return discordRpc?.quit();
         }
-
-        return () => {
-            discordRpc?.quit();
-        };
     }, [discordSettings.clientId, privateMode, discordSettings.enabled]);
 
     useEffect(() => {
         if (!discordSettings.enabled || privateMode) {
             return;
         }
-        const unsubSongChange = usePlayerStore.subscribe(
-            (state): ActivityState => [
-                state.current.song,
-                state.current.time,
-                state.current.status,
-            ],
-            setActivity,
-        );
+
+        logFn.info(logMsg[LogCategory.EXTERNAL].discordRpcEnabled, {
+            category: LogCategory.EXTERNAL,
+            meta: {
+                clientId: discordSettings.clientId,
+                subscribed: true,
+            },
+        });
+
+        const unsubSongChange = usePlayerStore.subscribe((state): ActivityState => {
+            const currentSong = state.getCurrentSong();
+            const currentTime = useTimestampStoreBase.getState().timestamp;
+            const status = state.player.status;
+
+            return [currentSong, currentTime, status];
+        }, setActivity);
+
         return () => {
             unsubSongChange();
         };
-    }, [discordSettings.enabled, privateMode, setActivity]);
+    }, [discordSettings.clientId, discordSettings.enabled, privateMode, setActivity]);
 };

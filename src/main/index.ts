@@ -19,9 +19,8 @@ import {
 import electronLocalShortcut from 'electron-localshortcut';
 import log from 'electron-log/main';
 import { autoUpdater } from 'electron-updater';
-import { access, constants, readFile, writeFile } from 'fs';
+import { access, constants } from 'fs';
 import path, { join } from 'path';
-import { deflate, inflate } from 'zlib';
 
 import packageJson from '../../package.json';
 import { disableMediaKeys, enableMediaKeys } from './features/core/player/media-keys';
@@ -38,7 +37,7 @@ import {
 } from './utils';
 import './features';
 
-import { TitleTheme } from '/@/shared/types/types';
+import { PlayerType, TitleTheme } from '/@/shared/types/types';
 
 export default class AppUpdater {
     constructor() {
@@ -115,10 +114,10 @@ const installExtensions = async () => {
         const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
         const extensions = ['REACT_DEVELOPER_TOOLS', 'REDUX_DEVTOOLS'];
 
-        return installer
-            .default(
+        installer
+            .installExtension(
                 extensions.map((name) => installer[name]),
-                forceDownload,
+                { forceDownload },
             )
             .then((installedExtensions) => {
                 createLog({
@@ -250,7 +249,7 @@ async function createWindow(first = true): Promise<void> {
         await installExtensions().catch(console.log);
     }
 
-    const nativeFrame = store.get('window_window_bar_style') === 'linux';
+    const nativeFrame = store.get('window_window_bar_style', 'linux') === 'linux';
     store.set('window_has_frame', nativeFrame);
 
     const nativeFrameConfig: Record<string, BrowserWindowConstructorOptions> = {
@@ -372,36 +371,6 @@ async function createWindow(first = true): Promise<void> {
         disableMediaKeys();
     });
 
-    ipcMain.on('player-restore-queue', () => {
-        if (store.get('resume')) {
-            const queueLocation = join(app.getPath('userData'), 'queue');
-
-            access(queueLocation, constants.F_OK, (accessError) => {
-                if (accessError) {
-                    console.error('unable to access saved queue: ', accessError);
-                    return;
-                }
-
-                readFile(queueLocation, (readError, buffer) => {
-                    if (readError) {
-                        console.error('failed to read saved queue: ', readError);
-                        return;
-                    }
-
-                    inflate(buffer, (decompressError, data) => {
-                        if (decompressError) {
-                            console.error('failed to decompress queue: ', decompressError);
-                            return;
-                        }
-
-                        const queue = JSON.parse(data.toString());
-                        getMainWindow()?.webContents.send('renderer-restore-queue', queue);
-                    });
-                });
-            });
-        }
-    });
-
     ipcMain.on('download-url', (_event, url: string) => {
         mainWindow?.webContents.downloadURL(url);
     });
@@ -442,8 +411,6 @@ async function createWindow(first = true): Promise<void> {
         mainWindow = null;
     });
 
-    let saved = false;
-
     mainWindow.on('close', (event) => {
         store.set('bounds', mainWindow?.getNormalBounds());
         store.set('maximized', mainWindow?.isMaximized());
@@ -454,46 +421,8 @@ async function createWindow(first = true): Promise<void> {
             mainWindow?.hide();
         }
 
-        if (!saved && store.get('resume')) {
-            event.preventDefault();
-            saved = true;
-
-            ipcMain.once('player-save-queue', async (_event, data: Record<string, any>) => {
-                const queueLocation = join(app.getPath('userData'), 'queue');
-                const serialized = JSON.stringify(data);
-
-                try {
-                    await new Promise<void>((resolve, reject) => {
-                        deflate(serialized, { level: 1 }, (error, deflated) => {
-                            if (error) {
-                                reject(error);
-                            } else {
-                                writeFile(queueLocation, deflated, (writeError) => {
-                                    if (writeError) {
-                                        reject(writeError);
-                                    } else {
-                                        resolve();
-                                    }
-                                });
-                            }
-                        });
-                    });
-                } catch (error) {
-                    console.error('error saving queue state: ', error);
-                } finally {
-                    if (!isMacOS()) {
-                        mainWindow?.close();
-                    }
-                    if (forceQuit) {
-                        app.exit();
-                    }
-                }
-            });
-            getMainWindow()?.webContents.send('renderer-save-queue');
-        } else {
-            if (forceQuit) {
-                app.exit();
-            }
+        if (forceQuit) {
+            app.exit();
         }
     });
 
@@ -505,7 +434,7 @@ async function createWindow(first = true): Promise<void> {
     });
 
     if (isWindows()) {
-        app.setAppUserModelId(process.execPath);
+        app.setAppUserModelId('org.jeffvli.feishin');
     }
 
     if (isMacOS()) {
@@ -548,8 +477,15 @@ async function createWindow(first = true): Promise<void> {
     }
 }
 
-const enableWindowsMediaSession = store.get('mediaSession', false) as boolean;
-const shouldDisableMediaFeatures = process.platform !== 'win32' || !enableWindowsMediaSession;
+// Only allow hardware media key handling if:
+// 1. The "Enable Media Session" setting is enabled
+// 2. The playback type is WEB (mpv not supported)
+// 3. The platform is not Linux (because we are using mpris instead)
+const enableMediaSession = store.get('mediaSession', false) as boolean;
+const playbackType = store.get('playbackType', PlayerType.WEB) as PlayerType;
+const shouldDisableMediaFeatures =
+    isLinux() || !enableMediaSession || playbackType !== PlayerType.WEB;
+
 if (shouldDisableMediaFeatures) {
     app.commandLine.appendSwitch(
         'disable-features',

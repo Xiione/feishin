@@ -1,12 +1,11 @@
-import { nanoid } from 'nanoid';
 import z from 'zod';
 
-import { NDGenre } from '/@/shared/api/navidrome.types';
 import { ndType } from '/@/shared/api/navidrome/navidrome-types';
 import { ssType } from '/@/shared/api/subsonic/subsonic-types';
 import {
     Album,
     AlbumArtist,
+    ExplicitStatus,
     Genre,
     LibraryItem,
     Playlist,
@@ -125,7 +124,7 @@ const getArtists = (
 
 const normalizeSong = (
     item: z.infer<typeof ndType._response.playlistSong> | z.infer<typeof ndType._response.song>,
-    server: null | ServerListItem,
+    server?: null | ServerListItem,
     imageSize?: number,
 ): Song => {
     let id;
@@ -152,6 +151,9 @@ const normalizeSong = (
         album: item.album,
         albumId: item.albumId,
         ...getArtists(item),
+        _itemType: LibraryItem.SONG,
+        _serverId: server?.id || 'unknown',
+        _serverType: ServerType.NAVIDROME,
         artistName: item.artist,
         bitDepth: item.bitDepth || null,
         bitRate: item.bitRate,
@@ -164,20 +166,29 @@ const normalizeSong = (
         discNumber: item.discNumber,
         discSubtitle: item.discSubtitle ? item.discSubtitle : null,
         duration: item.duration * 1000,
+        explicitStatus:
+            item.explicitStatus === 'e'
+                ? ExplicitStatus.EXPLICIT
+                : item.explicitStatus === 'c'
+                  ? ExplicitStatus.CLEAN
+                  : null,
         gain:
             item.rgAlbumGain || item.rgTrackGain
                 ? { album: item.rgAlbumGain, track: item.rgTrackGain }
                 : null,
         genres: (item.genres || []).map((genre) => ({
+            _itemType: LibraryItem.GENRE,
+            _serverId: server?.id || 'unknown',
+            _serverType: ServerType.NAVIDROME,
+            albumCount: null,
             id: genre.id,
             imageUrl: null,
-            itemType: LibraryItem.GENRE,
             name: genre.name,
+            songCount: null,
         })),
         id,
         imagePlaceholderUrl,
         imageUrl,
-        itemType: LibraryItem.SONG,
         lastPlayedAt: normalizePlayDate(item),
         lyrics: item.lyrics ? item.lyrics : null,
         mbzRecordingId: item.mbzReleaseTrackId || null,
@@ -196,18 +207,55 @@ const normalizeSong = (
             ? new Date(item.releaseDate)
             : new Date(Date.UTC(item.year, 0, 1))
         ).toISOString(),
-        releaseYear: String(item.year),
+        releaseYear: item.year || null,
         sampleRate: item.sampleRate || null,
-        serverId: server?.id || 'unknown',
-        serverType: ServerType.NAVIDROME,
         size: item.size,
-        streamUrl: `${server?.url}/rest/stream.view?id=${id}&v=1.13.0&c=Feishin&${server?.credential}`,
         tags: item.tags || null,
         trackNumber: item.trackNumber,
-        uniqueId: nanoid(),
         updatedAt: item.updatedAt,
         userFavorite: item.starred || false,
         userRating: item.rating || null,
+    };
+};
+
+const parseAlbumTags = (
+    item: z.infer<typeof ndType._response.album>,
+): Pick<Album, 'recordLabels' | 'releaseTypes' | 'tags' | 'version'> => {
+    if (!item.tags) {
+        return {
+            recordLabels: [],
+            releaseTypes: [],
+            tags: null,
+            version: null,
+        };
+    }
+
+    // We get the genre from elsewhere. We don't need genre twice
+    delete item.tags['genre'];
+
+    let recordLabels: string[] = [];
+    if (item.tags['recordlabel']) {
+        recordLabels = item.tags['recordlabel'];
+        delete item.tags['recordlabel'];
+    }
+
+    let releaseTypes: string[] = [];
+    if (item.tags['releasetype']) {
+        releaseTypes = item.tags['releasetype'];
+        delete item.tags['releasetype'];
+    }
+
+    let version: null | string = null;
+    if (item.tags['albumversion']) {
+        version = item.tags['albumversion'].join(' · ');
+        delete item.tags['albumversion'];
+    }
+
+    return {
+        recordLabels,
+        releaseTypes,
+        tags: item.tags,
+        version,
     };
 };
 
@@ -215,7 +263,7 @@ const normalizeAlbum = (
     item: z.infer<typeof ndType._response.album> & {
         songs?: z.infer<typeof ndType._response.songList>;
     },
-    server: null | ServerListItem,
+    server?: null | ServerListItem,
     imageSize?: number,
 ): Album => {
     const imageUrl = getCoverArtUrl({
@@ -231,25 +279,38 @@ const normalizeAlbum = (
     const imageBackdropUrl = imageUrl?.replace(/size=\d+/, 'size=1000') || null;
 
     return {
-        albumArtist: item.albumArtist,
+        ...parseAlbumTags(item),
         ...getArtists(item),
+        _itemType: LibraryItem.ALBUM,
+        _serverId: server?.id || 'unknown',
+        _serverType: ServerType.NAVIDROME,
+        albumArtist: item.albumArtist,
         backdropImageUrl: imageBackdropUrl,
         comment: item.comment || null,
         createdAt: item.createdAt.split('T')[0],
         duration: item.duration !== undefined ? item.duration * 1000 : null,
+        explicitStatus:
+            item.explicitStatus === 'e'
+                ? ExplicitStatus.EXPLICIT
+                : item.explicitStatus === 'c'
+                  ? ExplicitStatus.CLEAN
+                  : null,
         genres: (item.genres || []).map((genre) => ({
+            _itemType: LibraryItem.GENRE,
+            _serverId: server?.id || 'unknown',
+            _serverType: ServerType.NAVIDROME,
+            albumCount: null,
             id: genre.id,
             imageUrl: null,
-            itemType: LibraryItem.GENRE,
             name: genre.name,
+            songCount: null,
         })),
         id: item.id,
         imagePlaceholderUrl,
         imageUrl,
-        isCompilation: item.compilation,
-        itemType: LibraryItem.ALBUM,
-        lastPlayedAt: normalizePlayDate(item),
 
+        isCompilation: item.compilation,
+        lastPlayedAt: normalizePlayDate(item),
         mbzId: item.mbzAlbumId || null,
         name: item.name,
         originalDate: item.originalDate
@@ -262,16 +323,13 @@ const normalizeAlbum = (
             ? new Date(item.releaseDate)
             : new Date(Date.UTC(item.minYear, 0, 1))
         ).toISOString(),
-        releaseYear: item.minYear,
-        serverId: server?.id || 'unknown',
-        serverType: ServerType.NAVIDROME,
+        releaseYear: item.minYear || null,
         size: item.size,
         songCount: item.songCount,
         songs: item.songs ? item.songs.map((song) => normalizeSong(song, server)) : undefined,
         tags: item.tags || null,
-        uniqueId: nanoid(),
         updatedAt: item.updatedAt,
-        userFavorite: item.starred,
+        userFavorite: item.starred || false,
         userRating: item.rating || null,
     };
 };
@@ -280,7 +338,7 @@ const normalizeAlbumArtist = (
     item: z.infer<typeof ndType._response.albumArtist> & {
         similarArtists?: z.infer<typeof ssType._response.artistInfo>['artistInfo']['similarArtist'];
     },
-    server: null | ServerListItem,
+    server?: null | ServerListItem,
 ): AlbumArtist => {
     let imageUrl = getImageUrl({ url: item?.largeImageUrl || null });
 
@@ -312,25 +370,29 @@ const normalizeAlbumArtist = (
     }
 
     return {
+        _itemType: LibraryItem.ALBUM_ARTIST,
+        _serverId: server?.id || 'unknown',
+        _serverType: ServerType.NAVIDROME,
         albumCount,
         backgroundImageUrl: null,
         biography: item.biography || null,
         duration: null,
         genres: (item.genres || []).map((genre) => ({
+            _itemType: LibraryItem.GENRE,
+            _serverId: server?.id || 'unknown',
+            _serverType: ServerType.NAVIDROME,
+            albumCount: null,
             id: genre.id,
             imageUrl: null,
-            itemType: LibraryItem.GENRE,
             name: genre.name,
+            songCount: null,
         })),
         id: item.id,
         imageUrl: imageUrl || null,
-        itemType: LibraryItem.ALBUM_ARTIST,
         lastPlayedAt: normalizePlayDate(item),
         mbz: item.mbzArtistId || null,
         name: item.name,
         playCount: item.playCount || 0,
-        serverId: server?.id || 'unknown',
-        serverType: ServerType.NAVIDROME,
         similarArtists:
             item.similarArtists?.map((artist) => ({
                 id: artist.id,
@@ -338,14 +400,14 @@ const normalizeAlbumArtist = (
                 name: artist.name,
             })) || null,
         songCount,
-        userFavorite: item.starred,
-        userRating: item.rating,
+        userFavorite: item.starred || false,
+        userRating: item.rating || null,
     };
 };
 
 const normalizePlaylist = (
     item: z.infer<typeof ndType._response.playlist>,
-    server: null | ServerListItem,
+    server?: null | ServerListItem,
     imageSize?: number,
 ): Playlist => {
     const imageUrl = getCoverArtUrl({
@@ -359,34 +421,39 @@ const normalizePlaylist = (
     const imagePlaceholderUrl = null;
 
     return {
+        _itemType: LibraryItem.PLAYLIST,
+        _serverId: server?.id || 'unknown',
+        _serverType: ServerType.NAVIDROME,
         description: item.comment,
         duration: item.duration * 1000,
         genres: [],
         id: item.id,
         imagePlaceholderUrl,
         imageUrl,
-        itemType: LibraryItem.PLAYLIST,
         name: item.name,
         owner: item.ownerName,
         ownerId: item.ownerId,
         public: item.public,
         rules: item?.rules || null,
-        serverId: server?.id || 'unknown',
-        serverType: ServerType.NAVIDROME,
         size: item.size,
         songCount: item.songCount,
         sync: item.sync,
     };
 };
 
-const normalizeGenre = (item: NDGenre): Genre => {
+const normalizeGenre = (
+    item: z.infer<typeof ndType._response.genre> & { albumCount?: number; songCount?: number },
+    server: null | ServerListItem,
+): Genre => {
     return {
-        albumCount: undefined,
+        _itemType: LibraryItem.GENRE,
+        _serverId: server?.id || 'unknown',
+        _serverType: ServerType.NAVIDROME,
+        albumCount: item.albumCount ?? null,
         id: item.id,
         imageUrl: null,
-        itemType: LibraryItem.GENRE,
         name: item.name,
-        songCount: undefined,
+        songCount: item.songCount ?? null,
     };
 };
 

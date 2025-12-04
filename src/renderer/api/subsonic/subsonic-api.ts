@@ -7,7 +7,7 @@ import { z } from 'zod';
 import i18n from '/@/i18n/i18n';
 import { ssType } from '/@/shared/api/subsonic/subsonic-types';
 import { toast } from '/@/shared/components/toast/toast';
-import { ServerListItem } from '/@/shared/types/domain-types';
+import { ServerListItemWithCredential } from '/@/shared/types/domain-types';
 
 const c = initContract();
 
@@ -98,6 +98,22 @@ export const contract = c.router({
         query: ssType._parameters.getGenres,
         responses: {
             200: ssType._response.getGenres,
+        },
+    },
+    getIndexes: {
+        method: 'GET',
+        path: 'getIndexes.view',
+        query: ssType._parameters.getIndexes,
+        responses: {
+            200: ssType._response.getIndexes,
+        },
+    },
+    getMusicDirectory: {
+        method: 'GET',
+        path: 'getMusicDirectory.view',
+        query: ssType._parameters.getMusicDirectory,
+        responses: {
+            200: ssType._response.getMusicDirectory,
         },
     },
     getMusicFolderList: {
@@ -288,7 +304,7 @@ const silentlyTransformResponse = (data: any) => {
 };
 
 export const ssApiClient = (args: {
-    server: null | ServerListItem;
+    server: null | ServerListItemWithCredential;
     signal?: AbortSignal;
     silent?: boolean;
     url?: string;

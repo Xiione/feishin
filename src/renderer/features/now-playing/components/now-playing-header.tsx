@@ -1,5 +1,5 @@
 import { PageHeader } from '/@/renderer/components/page-header/page-header';
-import { LibraryHeaderBar } from '/@/renderer/features/shared';
+import { LibraryHeaderBar } from '/@/renderer/features/shared/components/library-header-bar';
 
 export const NowPlayingHeader = () => {
     // const currentSong = useCurrentSong();
@@ -7,7 +7,7 @@ export const NowPlayingHeader = () => {
 
     return (
         <PageHeader>
-            <LibraryHeaderBar>
+            <LibraryHeaderBar ignoreMaxWidth>
                 <LibraryHeaderBar.Title>Queue</LibraryHeaderBar.Title>
             </LibraryHeaderBar>
         </PageHeader>

@@ -61,7 +61,7 @@ interface PlayButtonProps extends Omit<ActionIconProps, 'icon' | 'variant'> {
     isPaused?: boolean;
 }
 
-export const PlayButton = forwardRef<HTMLButtonElement, PlayButtonProps>(
+export const MainPlayButton = forwardRef<HTMLButtonElement, PlayButtonProps>(
     ({ isPaused, onClick, ...props }: PlayButtonProps, ref) => {
         const playerStateClass = isPaused
             ? PlaybackSelectors.playerStatePaused
@@ -83,6 +83,7 @@ export const PlayButton = forwardRef<HTMLButtonElement, PlayButtonProps>(
                     label: isPaused
                         ? (t('player.play', { postProcess: 'sentenceCase' }) as string)
                         : (t('player.pause', { postProcess: 'sentenceCase' }) as string),
+                    openDelay: 0,
                 }}
                 {...props}
             />
