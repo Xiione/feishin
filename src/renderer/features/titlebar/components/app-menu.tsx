@@ -7,13 +7,11 @@ import { Link, useNavigate } from 'react-router';
 import packageJson from '../../../../../package.json';
 
 import { ServerList } from '/@/renderer/features/servers/components/server-list';
-import { AppRoute } from '/@/renderer/router/routes';
+import { openSettingsModal } from '/@/renderer/features/settings/utils/open-settings-modal';
 import { useAppStore, useAppStoreActions, useCommandPalette } from '/@/renderer/store';
 import { DropdownMenu, MenuItemProps } from '/@/shared/components/dropdown-menu/dropdown-menu';
 import { Icon } from '/@/shared/components/icon/icon';
 import { toast } from '/@/shared/components/toast/toast';
-
-const localSettings = isElectron() ? window.api.localSettings : null;
 
 const browser = isElectron() ? window.api.browser : null;
 
@@ -177,7 +175,7 @@ export const AppMenu = () => {
             type: 'divider',
         },
         {
-            condition: !localSettings?.env.SERVER_LOCK,
+            condition: !window.SERVER_LOCK,
             id: 'manage-servers',
             item: {
                 label: t('page.appMenu.manageServers', { postProcess: 'sentenceCase' }),
@@ -195,7 +193,7 @@ export const AppMenu = () => {
             icon: 'settings',
             id: 'settings',
             label: t('page.appMenu.settings', { postProcess: 'sentenceCase' }),
-            onClick: () => navigate(AppRoute.SETTINGS),
+            onClick: () => openSettingsModal(),
             type: 'item',
         },
         {

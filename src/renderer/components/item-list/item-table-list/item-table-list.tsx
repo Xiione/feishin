@@ -34,6 +34,7 @@ import {
 import { parseTableColumns } from '/@/renderer/components/item-list/helpers/parse-table-columns';
 import { useStickyTableGroupRows } from '/@/renderer/components/item-list/item-table-list/hooks/use-sticky-table-group-rows';
 import { useStickyTableHeader } from '/@/renderer/components/item-list/item-table-list/hooks/use-sticky-table-header';
+import { SelectionDialog } from '/@/renderer/components/item-list/selection-dialog';
 import {
     ItemControls,
     ItemListHandle,
@@ -672,6 +673,7 @@ interface ItemTableListProps {
     enableHorizontalBorders?: boolean;
     enableRowHoverHighlight?: boolean;
     enableSelection?: boolean;
+    enableSelectionDialog?: boolean;
     enableStickyGroupRows?: boolean;
     enableStickyHeader?: boolean;
     enableVerticalBorders?: boolean;
@@ -713,6 +715,7 @@ const BaseItemTableList = ({
     enableHorizontalBorders = false,
     enableRowHoverHighlight = true,
     enableSelection = true,
+    enableSelectionDialog = true,
     enableStickyGroupRows = false,
     enableStickyHeader = false,
     enableVerticalBorders = false,
@@ -1197,6 +1200,29 @@ const BaseItemTableList = ({
             }
         };
     }, [enableDrag, initialize, osInstance, pinnedRightColumnCount]);
+
+    useEffect(() => {
+        if (pinnedLeftColumnCount === 0) {
+            return;
+        }
+
+        const { current: root } = pinnedLeftColumnRef;
+
+        if (!root || !root.firstElementChild) {
+            return;
+        }
+
+        const viewport = root.firstElementChild as HTMLElement;
+
+        if (enableDrag) {
+            autoScrollForElements({
+                canScroll: () => true,
+                element: viewport,
+                getAllowedAxis: () => 'vertical',
+                getConfiguration: () => ({ maxScrollSpeed: 'fast' }),
+            });
+        }
+    }, [enableDrag, pinnedLeftColumnCount]);
 
     // Initialize overlayscrollbars for right pinned columns
     useEffect(() => {
@@ -2295,6 +2321,7 @@ const BaseItemTableList = ({
                 totalRowCount={totalRowCount}
             />
             <ExpandedContainer internalState={internalState} itemType={itemType} />
+            {enableSelectionDialog && <SelectionDialog internalState={internalState} />}
         </motion.div>
     );
 };

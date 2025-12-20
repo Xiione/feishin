@@ -14,6 +14,8 @@ import {
 } from '/@/shared/types/domain-types';
 import { ServerListItem, ServerType } from '/@/shared/types/types';
 
+const TICKS_PER_MS = 10000;
+
 const getAlbumArtistCoverArtUrl = (args: {
     baseUrl: string;
     item: z.infer<typeof jfType._response.albumArtist>;
@@ -203,12 +205,14 @@ const normalizeSong = (
             name: entry.Name,
         })),
         albumId: item.AlbumId || `dummy/${item.Id}`,
-        artistName: item?.ArtistItems?.[0]?.Name,
-        artists: item?.ArtistItems?.map((entry) => ({
-            id: entry.Id,
-            imageUrl: null,
-            name: entry.Name,
-        })),
+        artistName: item?.ArtistItems?.[0]?.Name || item?.AlbumArtists?.[0]?.Name,
+        artists: (item?.ArtistItems?.length ? item.ArtistItems : item.AlbumArtists)?.map(
+            (entry) => ({
+                id: entry.Id,
+                imageUrl: null,
+                name: entry.Name,
+            }),
+        ),
         bitDepth: null,
         bitRate,
         bpm: null,
@@ -219,7 +223,7 @@ const normalizeSong = (
         createdAt: item.DateCreated,
         discNumber: (item.ParentIndexNumber && item.ParentIndexNumber) || 1,
         discSubtitle: null,
-        duration: item.RunTimeTicks / 10000,
+        duration: item.RunTimeTicks / TICKS_PER_MS,
         explicitStatus: null,
         gain:
             item.NormalizationGain !== undefined
@@ -254,11 +258,7 @@ const normalizeSong = (
         peak: null,
         playCount: (item.UserData && item.UserData.PlayCount) || 0,
         playlistItemId: item.PlaylistItemId,
-        releaseDate: item.PremiereDate
-            ? new Date(item.PremiereDate).toISOString()
-            : item.ProductionYear
-              ? new Date(item.ProductionYear, 0, 1).toISOString()
-              : null,
+        releaseDate: item.PremiereDate ? item.PremiereDate : null,
         releaseYear: item.ProductionYear || null,
         sampleRate,
         size,
@@ -286,15 +286,17 @@ const normalizeAlbum = (
                 imageUrl: null,
                 name: entry.Name,
             })) || [],
-        artists: item.ArtistItems?.map((entry) => ({
-            id: entry.Id,
-            imageUrl: null,
-            name: entry.Name,
-        })),
+        artists: (item.ArtistItems?.length ? item.ArtistItems : item.AlbumArtists)?.map(
+            (entry) => ({
+                id: entry.Id,
+                imageUrl: null,
+                name: entry.Name,
+            }),
+        ),
         backdropImageUrl: null,
         comment: null,
         createdAt: item.DateCreated,
-        duration: item.RunTimeTicks / 10000,
+        duration: item.RunTimeTicks / TICKS_PER_MS,
         explicitStatus: null,
         genres:
             item.GenreItems?.map((entry) => ({
@@ -322,7 +324,7 @@ const normalizeAlbum = (
         participants: getPeople(item),
         playCount: item.UserData?.PlayCount || 0,
         recordLabels: [],
-        releaseDate: item.PremiereDate?.split('T')[0] || null,
+        releaseDate: item.PremiereDate || null,
         releaseTypes: [],
         releaseYear: item.ProductionYear || null,
         size: null,
@@ -363,7 +365,7 @@ const normalizeAlbumArtist = (
         albumCount: item.AlbumCount ?? null,
         backgroundImageUrl: null,
         biography: item.Overview || null,
-        duration: item.RunTimeTicks / 10000,
+        duration: item.RunTimeTicks / TICKS_PER_MS,
         genres: item.GenreItems?.map((entry) => ({
             _itemType: LibraryItem.GENRE,
             _serverId: server?.id || '',
@@ -409,7 +411,7 @@ const normalizePlaylist = (
         _serverId: server?.id || '',
         _serverType: ServerType.JELLYFIN,
         description: item.Overview || null,
-        duration: item.RunTimeTicks / 10000,
+        duration: item.RunTimeTicks / TICKS_PER_MS,
         genres: item.GenreItems?.map((entry) => ({
             _itemType: LibraryItem.GENRE,
             _serverId: server?.id || '',

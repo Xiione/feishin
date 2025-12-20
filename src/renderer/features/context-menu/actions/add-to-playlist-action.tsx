@@ -4,6 +4,8 @@ import Fuse from 'fuse.js';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { api } from '/@/renderer/api';
+import { queryKeys } from '/@/renderer/api/query-keys';
 import {
     getAlbumArtistSongsById,
     getAlbumSongsById,
@@ -15,11 +17,14 @@ import { playlistsQueries } from '/@/renderer/features/playlists/api/playlists-a
 import { useRecentPlaylists } from '/@/renderer/features/playlists/hooks/use-recent-playlists';
 import { useAddToPlaylist } from '/@/renderer/features/playlists/mutations/add-to-playlist-mutation';
 import { useCurrentServer, useCurrentServerId } from '/@/renderer/store';
+import { Checkbox } from '/@/shared/components/checkbox/checkbox';
 import { ContextMenu } from '/@/shared/components/context-menu/context-menu';
 import { Icon } from '/@/shared/components/icon/icon';
 import { Spinner } from '/@/shared/components/spinner/spinner';
 import { TextInput } from '/@/shared/components/text-input/text-input';
 import { toast } from '/@/shared/components/toast/toast';
+import { Tooltip } from '/@/shared/components/tooltip/tooltip';
+import { useLocalStorage } from '/@/shared/hooks/use-local-storage';
 import { LibraryItem, PlaylistListSort, SortOrder } from '/@/shared/types/domain-types';
 
 interface AddToPlaylistActionProps {
@@ -33,6 +38,10 @@ export const AddToPlaylistAction = ({ items, itemType }: AddToPlaylistActionProp
     const serverId = useCurrentServerId();
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
+    const [skipDuplicates, setSkipDuplicates] = useLocalStorage({
+        defaultValue: true,
+        key: 'playlist-skip-duplicate',
+    });
     const addToPlaylistMutation = useAddToPlaylist({});
 
     const playlistsQuery = useQuery(
@@ -162,7 +171,7 @@ export const AddToPlaylistAction = ({ items, itemType }: AddToPlaylistActionProp
             try {
                 let allSongIds: string[] = [];
 
-                if (itemType === LibraryItem.SONG) {
+                if (itemType === LibraryItem.SONG || itemType === LibraryItem.PLAYLIST_SONG) {
                     allSongIds = items;
                 } else if (itemType === LibraryItem.ALBUM) {
                     for (const id of items) {
@@ -193,8 +202,55 @@ export const AddToPlaylistAction = ({ items, itemType }: AddToPlaylistActionProp
                 }
 
                 if (allSongIds.length === 0) {
-                    toast.error({
-                        message: t('error.noItemsSelected', { postProcess: 'sentenceCase' }),
+                    toast.success({
+                        message: t('form.addToPlaylist.success', {
+                            message: 0,
+                            numOfPlaylists: 1,
+                            postProcess: 'sentenceCase',
+                        }),
+                    });
+                    return;
+                }
+
+                let songsToAdd: string[] = allSongIds;
+
+                if (skipDuplicates) {
+                    const queryKey = queryKeys.playlists.songList(serverId, playlistId);
+
+                    const playlistSongsRes = await queryClient.fetchQuery({
+                        queryFn: ({ signal }) => {
+                            return api.controller.getPlaylistSongList({
+                                apiClientProps: {
+                                    serverId,
+                                    signal,
+                                },
+                                query: {
+                                    id: playlistId,
+                                },
+                            });
+                        },
+                        queryKey,
+                    });
+
+                    const playlistSongIds = playlistSongsRes?.items?.map((song) => song.id);
+                    const uniqueSongIds: string[] = [];
+
+                    for (const songId of allSongIds) {
+                        if (!playlistSongIds?.includes(songId)) {
+                            uniqueSongIds.push(songId);
+                        }
+                    }
+
+                    songsToAdd = uniqueSongIds;
+                }
+
+                if (songsToAdd.length === 0) {
+                    toast.success({
+                        message: t('form.addToPlaylist.success', {
+                            message: 0,
+                            numOfPlaylists: 1,
+                            postProcess: 'sentenceCase',
+                        }),
                     });
                     return;
                 }
@@ -203,7 +259,7 @@ export const AddToPlaylistAction = ({ items, itemType }: AddToPlaylistActionProp
                     {
                         apiClientProps: { serverId },
                         body: {
-                            songId: allSongIds,
+                            songId: songsToAdd,
                         },
                         query: {
                             id: playlistId,
@@ -219,6 +275,14 @@ export const AddToPlaylistAction = ({ items, itemType }: AddToPlaylistActionProp
                         onSuccess: () => {},
                     },
                 );
+
+                toast.success({
+                    message: t('form.addToPlaylist.success', {
+                        message: songsToAdd.length,
+                        numOfPlaylists: 1,
+                        postProcess: 'sentenceCase',
+                    }),
+                });
             } catch (error) {
                 toast.error({
                     message: (error as Error).message,
@@ -235,7 +299,9 @@ export const AddToPlaylistAction = ({ items, itemType }: AddToPlaylistActionProp
             getSongsByPlaylist,
             itemType,
             items,
+            queryClient,
             serverId,
+            skipDuplicates,
             t,
         ],
     );
@@ -299,6 +365,24 @@ export const AddToPlaylistAction = ({ items, itemType }: AddToPlaylistActionProp
             onPointerDown={(e) => e.stopPropagation()}
             pb="xs"
             placeholder={t('common.search', { postProcess: 'sentenceCase' })}
+            rightSection={
+                <Tooltip
+                    label={t('form.addToPlaylist.input', {
+                        context: 'skipDuplicates',
+                        postProcess: 'titleCase',
+                    })}
+                >
+                    <Checkbox
+                        checked={skipDuplicates}
+                        onChange={(e) => {
+                            setSkipDuplicates(e.target.checked);
+                            e.stopPropagation();
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        size="sm"
+                    />
+                </Tooltip>
+            }
             size="sm"
             value={searchTerm}
         />

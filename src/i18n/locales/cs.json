@@ -14,7 +14,7 @@
         "shuffle": "přehrát (náhodně)",
         "playbackFetchNoResults": "nenalezeny žádné skladby",
         "playbackFetchInProgress": "načítání skladeb…",
-        "addNext": "přidat jako další",
+        "addNext": "další",
         "playbackSpeed": "rychlost přehrávání",
         "playbackFetchCancel": "chvíli to trvá… zavřete oznámení pro zrušení akce",
         "play": "přehrát",
@@ -26,16 +26,20 @@
         "queue_moveToTop": "přesunout vybrané dolů",
         "queue_moveToBottom": "přesunout vybrané nahoru",
         "shuffle_off": "náhodně zakázáno",
-        "addLast": "přidat poslední",
+        "addLast": "poslední",
         "mute": "ztlumit",
         "skip_forward": "přeskočit dopředu",
         "playSimilarSongs": "přehrát podobné skladby",
         "viewQueue": "zobrazit frontu",
-        "addLastShuffled": "přidat jako poslední (náhodně)",
-        "addNextShuffled": "přidat jako další (náhodně)",
+        "addLastShuffled": "poslední (náhodně)",
+        "addNextShuffled": "další (náhodně)",
         "queueType": "typ fronty",
         "queueType_default": "výchozí",
-        "queueType_priority": "priorita"
+        "queueType_priority": "priorita",
+        "holdToShuffle": "podržte pro zamíchání",
+        "lyrics": "texty",
+        "restoreQueueFromServer": "obnovit frontu ze serveru",
+        "saveQueueToServer": "uložit frontu na server"
     },
     "setting": {
         "crossfadeStyle_description": "vyberte způsob prolnutí u přehrávače zvuku",
@@ -326,7 +330,26 @@
         "queryBuilderCustomFields": "vlastní pole",
         "queryBuilderCustomFields_description": "přidat vlasntí pole k použití při sestavování dotazů",
         "audioFadeOnStatusChange": "zeslabení zvuku při změně stavu",
-        "audioFadeOnStatusChange_description": "povolí postupné zeslabení a zesílení zvuku při změně stavu přehrávání/pozastavení"
+        "audioFadeOnStatusChange_description": "povolí postupné zeslabení a zesílení zvuku při změně stavu přehrávání/pozastavení",
+        "followCurrentSong_description": "automaticky posouvat frontu přehrávání na právě hrající skladbu",
+        "followCurrentSong": "následovat aktuální skladbu",
+        "playerFilters": "Filtrovat skladby z fronty",
+        "playerFilters_description": "vynechat skladby z přidání do fronty na základě následujících kritérií",
+        "playerbarSlider_description": "vlnová křivka není doporučena, pokud se nacházíte na pomalém nebo měřeném internetovém připojení",
+        "autoDJ": "automatický DJ",
+        "autoDJ_description": "automaticky přidávat podobné skladby do fronty",
+        "autoDJ_itemCount": "počet položek",
+        "autoDJ_itemCount_description": "počet položek, které se pokusíme přidat do fronty po povolení automatického DJ",
+        "autoDJ_timing": "časování",
+        "autoDJ_timing_description": "počet skladeb zbývajících ve frontě před spuštěním automatického DJ",
+        "logLevel": "úroveň protokolu",
+        "logLevel_description": "nastaví minimální úroveň protokolu k zobrazení. ladění zobrazuje vše, možnost chyba zobrazí pouze chyby",
+        "logLevel_optionDebug": "ladění",
+        "logLevel_optionError": "chyba",
+        "logLevel_optionInfo": "informace",
+        "logLevel_optionWarn": "varování",
+        "useThemeAccentColor": "použít barvu motivu",
+        "useThemeAccentColor_description": "použít primární barvu definovanou ve zvoleném motivu namísto vlastní barvy rozhraní"
     },
     "action": {
         "editPlaylist": "upravit $t(entity.playlist_one)",
@@ -352,12 +375,17 @@
         },
         "moveToNext": "přesunout na další",
         "downloadStarted": "spuštěno stahování {{count}} položek",
-        "largeFetch": "tato akce provede {{count}} síťových žádostí na váš server",
         "moveItems": "přesunout položky",
         "shuffle": "náhodně",
         "shuffleAll": "vše náhodně",
         "shuffleSelected": "vybrané náhodně",
-        "viewMore": "zobrazit více"
+        "viewMore": "zobrazit více",
+        "moveUp": "posunout nahoru",
+        "moveDown": "posunout dolů",
+        "holdToMoveToTop": "podržte pro přesunutí nahoru",
+        "holdToMoveToBottom": "podržte pro přesunutí dolů",
+        "createRadioStation": "vytvořit $t(entity.radioStation_one)",
+        "deleteRadioStation": "odstranit $t(entity.radioStation_one)"
     },
     "common": {
         "backward": "zpátky",
@@ -472,7 +500,9 @@
         "sort": "seřadit",
         "gridRows": "řádky mřížky",
         "tableColumns": "sloupce tabulky",
-        "itemsMore": "{{count}} dalších"
+        "itemsMore": "{{count}} dalších",
+        "noFilters": "nejsou nastaveny žádné filtry",
+        "view": "zobrazit"
     },
     "table": {
         "config": {
@@ -543,7 +573,9 @@
                 "songCount": "$t(entity.track_other)",
                 "albumCount": "$t(entity.album_other)",
                 "genreBadge": "$t(entity.genre_one) (značky)",
-                "image": "obrázek"
+                "image": "obrázek",
+                "bitDepth": "$t(common.bitDepth)",
+                "sampleRate": "$t(common.sampleRate)"
             }
         },
         "column": {
@@ -571,7 +603,9 @@
             "channels": "$t(common.channel_other)",
             "size": "$t(common.size)",
             "codec": "$t(common.codec)",
-            "owner": "majitel"
+            "owner": "majitel",
+            "bitDepth": "$t(common.bitDepth)",
+            "sampleRate": "$t(common.sampleRate)"
         }
     },
     "error": {
@@ -598,7 +632,9 @@
         "networkError": "vyskytla se chyba sítě",
         "openError": "nepodařilo se otevřít soubor",
         "badValue": "neplatná možnost „{{value}}“. tato možnost již neexistuje",
-        "notificationDenied": "oprávnění k posílání oznámení byla zamítnuta. toto nastavení nemá žádný vliv"
+        "notificationDenied": "oprávnění k posílání oznámení byla zamítnuta. toto nastavení nemá žádný vliv",
+        "multipleServerSaveQueueError": "fronta přehrávání má jednu nebo více skladeb, které nejsou z aktuálního serveru. tato funkce není podporována",
+        "saveQueueFailed": "nepodařilo se uložit frontu"
     },
     "filter": {
         "mostPlayed": "nejvíce přehráváno",
@@ -660,7 +696,8 @@
             "albumArtists": "$t(entity.albumArtist_other)",
             "shared": "$t(entity.playlist_other) sdíleny",
             "myLibrary": "moje knihovna",
-            "favorites": "$t(entity.favorite_other)"
+            "favorites": "$t(entity.favorite_other)",
+            "radio": "$t(entity.radioStation_other)"
         },
         "fullscreenPlayer": {
             "config": {
@@ -700,7 +737,8 @@
             "privateModeOn": "zapnout soukromý režim",
             "selectMusicFolder": "vybrat složku s hudbou",
             "noMusicFolder": "není vybrána žádná složka s hudbou",
-            "multipleMusicFolders": "Vybráno {{count}} složek s hudbou"
+            "multipleMusicFolders": "Vybráno {{count}} složek s hudbou",
+            "commandPalette": "otevřít paletu příkazů"
         },
         "contextMenu": {
             "addToPlaylist": "$t(action.addToPlaylist)",
@@ -736,7 +774,8 @@
             "title": "$t(common.home)",
             "explore": "procházet z vaší knihovny",
             "recentlyPlayed": "nedávno přehráno",
-            "recentlyReleased": "nedávno vydáno"
+            "recentlyReleased": "nedávno vydáno",
+            "genres": "$t(entity.genre_other)"
         },
         "albumDetail": {
             "moreFromArtist": "více od tohoto $t(entity.artist_one)",
@@ -763,7 +802,9 @@
             "audio": "zvuk",
             "lyrics": "texty",
             "transcoding": "překódování",
-            "discord": "discord"
+            "discord": "discord",
+            "playerFilters": "filtry přehrávače",
+            "logger": "protokol"
         },
         "albumArtistList": {
             "title": "$t(entity.albumArtist_other)"
@@ -823,6 +864,12 @@
         },
         "favorites": {
             "title": "$t(entity.favorite_other)"
+        },
+        "folderList": {
+            "title": "$t(entity.folder_other)"
+        },
+        "radioList": {
+            "title": "stanice rádia"
         }
     },
     "form": {
@@ -883,7 +930,8 @@
         "editPlaylist": {
             "title": "upravit $t(entity.playlist_one)",
             "success": "$t(entity.playlist_one) úspěšně aktualizován",
-            "publicJellyfinNote": "Jellyfin z nějakého důvodu neukazuje, zda je seznam skladeb veřejný, nebo ne. Pokud si přejete, aby zůstal veřejný, zvolte prosím následující vstup"
+            "publicJellyfinNote": "Jellyfin z nějakého důvodu neukazuje, zda je seznam skladeb veřejný, nebo ne. Pokud si přejete, aby zůstal veřejný, zvolte prosím následující vstup",
+            "editNote": "ruční úpravy velkých seznamů skladeb nejsou doporučeny. opravdu přijímáte riziko ztráty dat, které může vzniknout přepsáním existujícího seznamu skladeb?"
         },
         "shareItem": {
             "allowDownloading": "umožnit stahování",
@@ -900,7 +948,7 @@
         },
         "largeFetchConfirmation": {
             "title": "přidat položky do fronty",
-            "description": "Tento požadavek se pokusí načíst {{count}} položek ze serveru"
+            "description": "Tato akce přidá všechny položky v aktuálně filtrovaném zobrazení"
         },
         "shuffleAll": {
             "title": "přehrát náhodně",
@@ -912,6 +960,16 @@
             "input_played_optionAll": "všechny skladby",
             "input_played_optionUnplayed": "pouze nepřehrané skladby",
             "input_played_optionPlayed": "pouze přehrané skladby"
+        },
+        "saveQueue": {
+            "success": "fronta přehrávání uložena na server"
+        },
+        "createRadioStation": {
+            "success": "stanice rádia úspěšně vytvořena",
+            "title": "vytvořit stanici rádia",
+            "input_homepageUrl": "adresa domovské stránky",
+            "input_name": "název",
+            "input_streamUrl": "adresa streamu"
         }
     },
     "entity": {
@@ -966,7 +1024,13 @@
         "play_other": "{{count}} přehrání",
         "song_one": "píseň",
         "song_few": "písničky",
-        "song_other": "písní"
+        "song_other": "písní",
+        "radioStation_one": "stanice rádia",
+        "radioStation_few": "stanice rádia",
+        "radioStation_other": "stanice rádia",
+        "radioStationWithCount_one": "{{count}} stanice rádia",
+        "radioStationWithCount_few": "{{count}} stanice rádia",
+        "radioStationWithCount_other": "{{count}} stanic rádia"
     },
     "dragDropZone": {
         "error_oneFileOnly": "Vyberte prosím pouze 1 soubor",
@@ -999,5 +1063,26 @@
     "queryBuilder": {
         "standardTags": "standardní značky",
         "customTags": "vlastní značky"
+    },
+    "filterOperator": {
+        "after": "je po",
+        "afterDate": "je po (datum)",
+        "before": "je před",
+        "beforeDate": "je před (datum)",
+        "contains": "obsahuje",
+        "endsWith": "končí na",
+        "inPlaylist": "je v",
+        "inTheLast": "je v posledním",
+        "inTheRange": "je v rozsahu",
+        "inTheRangeDate": "je v rozsahu (datum)",
+        "is": "je",
+        "isNot": "není",
+        "isGreaterThan": "je větší než",
+        "isLessThan": "je menší než",
+        "matchesRegex": "odpovídá regulárnímu výrazu",
+        "notContains": "neobsahuje",
+        "notInPlaylist": "není v",
+        "notInTheLast": "není v posledním",
+        "startsWith": "začíná na"
     }
 }

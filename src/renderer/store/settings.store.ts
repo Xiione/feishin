@@ -35,6 +35,8 @@ import {
     TableColumn,
 } from '/@/shared/types/types';
 
+const utils = isElectron() ? window.api.utils : null;
+
 type DeepPartial<T> = {
     [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
@@ -257,6 +259,7 @@ const GeneralSettingsSchema = z.object({
     theme: z.nativeEnum(AppTheme),
     themeDark: z.nativeEnum(AppTheme),
     themeLight: z.nativeEnum(AppTheme),
+    useThemeAccentColor: z.boolean(),
     volumeWheelStep: z.number(),
     volumeWidth: z.number(),
     zoomFactor: z.number(),
@@ -401,10 +404,17 @@ const QueryBuilderSettingsSchema = z.object({
     tag: z.array(QueryBuilderCustomFieldSchema),
 });
 
+const AutoDJSettingsSchema = z.object({
+    enabled: z.boolean(),
+    itemCount: z.number(),
+    timing: z.number(),
+});
+
 /**
  * This schema is used for validation of the imported settings json
  */
 export const ValidationSettingsStateSchema = z.object({
+    autoDJ: AutoDJSettingsSchema,
     css: CssSettingsSchema,
     discord: DiscordSettingsSchema,
     font: FontSettingsSchema,
@@ -633,6 +643,12 @@ export const sidebarItems: SidebarItemType[] = [
         route: AppRoute.PLAYLISTS,
     },
     {
+        disabled: false,
+        id: 'Radio',
+        label: i18n.t('page.sidebar.radio'),
+        route: AppRoute.RADIO,
+    },
+    {
         disabled: true,
         id: 'Settings',
         label: i18n.t('page.sidebar.settings'),
@@ -652,13 +668,29 @@ const artistItems = Object.values(ArtistItem).map((item) => ({
 
 // Determines the default/initial windowBarStyle value based on the current platform.
 const getPlatformDefaultWindowBarStyle = (): Platform => {
-    // Prefer native window bar
-    return Platform.LINUX;
+    if (utils?.isWindows()) {
+        return Platform.WINDOWS;
+    }
+
+    if (utils?.isMacOS()) {
+        return Platform.MACOS;
+    }
+
+    if (utils?.isLinux()) {
+        return Platform.WINDOWS;
+    }
+
+    return Platform.WEB;
 };
 
 const platformDefaultWindowBarStyle: Platform = getPlatformDefaultWindowBarStyle();
 
 const initialState: SettingsState = {
+    autoDJ: {
+        enabled: false,
+        itemCount: 5,
+        timing: 1,
+    },
     css: {
         content: '',
         enabled: false,
@@ -710,8 +742,8 @@ const initialState: SettingsState = {
             type: PlayerbarSliderType.WAVEFORM,
         },
         resume: true,
-        showLyricsInSidebar: true,
-        showVisualizerInSidebar: true,
+        showLyricsInSidebar: false,
+        showVisualizerInSidebar: false,
         sidebarCollapsedNavigation: true,
         sidebarCollapseShared: false,
         sidebarItems,
@@ -725,6 +757,7 @@ const initialState: SettingsState = {
         theme: AppTheme.DEFAULT_DARK,
         themeDark: AppTheme.DEFAULT_DARK,
         themeLight: AppTheme.DEFAULT_LIGHT,
+        useThemeAccentColor: false,
         volumeWheelStep: 5,
         volumeWidth: 70,
         zoomFactor: 100,
@@ -916,7 +949,6 @@ const initialState: SettingsState = {
                         TableColumn.LAST_PLAYED,
                         TableColumn.USER_FAVORITE,
                         TableColumn.USER_RATING,
-                        TableColumn.ACTIONS,
                     ],
                 }),
                 enableAlternateRowColors: false,
@@ -961,7 +993,6 @@ const initialState: SettingsState = {
                         TableColumn.LAST_PLAYED,
                         TableColumn.USER_FAVORITE,
                         TableColumn.USER_RATING,
-                        TableColumn.ACTIONS,
                     ],
                 }),
                 enableAlternateRowColors: false,
@@ -1040,7 +1071,6 @@ const initialState: SettingsState = {
                         TableColumn.TITLE,
                         TableColumn.DURATION,
                         TableColumn.SONG_COUNT,
-                        TableColumn.ACTIONS,
                     ],
                 }),
                 enableAlternateRowColors: false,
@@ -1249,23 +1279,66 @@ const initialState: SettingsState = {
     },
 };
 
+// Helper function to create a deep clone of initialState
+const getInitialState = (): SettingsState => {
+    const freshHomeItems = Object.values(HomeItem).map((item) => ({
+        disabled: false,
+        id: item,
+    }));
+
+    const freshArtistItems = Object.values(ArtistItem).map((item) => ({
+        disabled: false,
+        id: item,
+    }));
+
+    // Deep clone using JSON to ensure all nested objects/arrays are fresh copies
+    const clonedState = JSON.parse(JSON.stringify(initialState)) as SettingsState;
+
+    // Replace arrays that need fresh references
+    clonedState.general.homeItems = freshHomeItems;
+    clonedState.general.artistItems = freshArtistItems;
+    clonedState.general.sidebarItems = JSON.parse(
+        JSON.stringify(sidebarItems),
+    ) as SidebarItemType[];
+
+    // Regenerate random password for remote settings
+    clonedState.remote.password = randomString(8);
+
+    return clonedState;
+};
+
 export const useSettingsStore = createWithEqualityFn<SettingsSlice>()(
     persist(
         devtools(
             immer((set, get) => ({
                 actions: {
                     reset: () => {
-                        if (!isElectron()) {
-                            set({
-                                ...initialState,
-                                playback: {
-                                    ...initialState.playback,
-                                    type: PlayerType.WEB,
-                                },
-                            });
-                        } else {
-                            set(initialState);
-                        }
+                        const freshState = getInitialState();
+                        set((state) => {
+                            // Deep clone the fresh state to ensure all nested objects/arrays are new references
+                            const resetState = JSON.parse(
+                                JSON.stringify(freshState),
+                            ) as SettingsState;
+
+                            // Override playback type for web if not electron
+                            if (!isElectron()) {
+                                resetState.playback.type = PlayerType.WEB;
+                            }
+
+                            // Replace all state properties (except actions) with the reset state
+                            state.css = resetState.css;
+                            state.discord = resetState.discord;
+                            state.font = resetState.font;
+                            state.general = resetState.general;
+                            state.hotkeys = resetState.hotkeys;
+                            state.lists = resetState.lists;
+                            state.lyrics = resetState.lyrics;
+                            state.playback = resetState.playback;
+                            state.queryBuilder = resetState.queryBuilder;
+                            state.remote = resetState.remote;
+                            state.tab = resetState.tab;
+                            state.window = resetState.window;
+                        });
                     },
                     resetSampleRate: () => {
                         set((state) => {
@@ -1417,10 +1490,56 @@ export const useSettingsStore = createWithEqualityFn<SettingsSlice>()(
                     });
                 }
 
+                if (version <= 14) {
+                    // Add bitDepth and sampleRate columns to song lists
+
+                    const bitDepthColumn: ItemTableListColumnConfig = {
+                        align: 'center',
+                        autoSize: false,
+                        id: TableColumn.BIT_DEPTH,
+                        isEnabled: false,
+                        pinned: null,
+                        width: 100,
+                    };
+
+                    const sampleRateColumn: ItemTableListColumnConfig = {
+                        align: 'center',
+                        autoSize: false,
+                        id: TableColumn.SAMPLE_RATE,
+                        isEnabled: false,
+                        pinned: null,
+                        width: 100,
+                    };
+
+                    const columns = [bitDepthColumn, sampleRateColumn];
+
+                    state.lists[LibraryItem.SONG]?.table.columns.push(...columns);
+                    state.lists[LibraryItem.PLAYLIST_SONG]?.table.columns.push(...columns);
+                    state.lists[LibraryItem.QUEUE_SONG]?.table.columns.push(...columns);
+                    state.lists['albumDetail']?.table.columns.push(...columns);
+                    state.lists['fullscreen']?.table.columns.push(...columns);
+                    state.lists['sidequeue']?.table.columns.push(...columns);
+                }
+
+                if (version <= 15) {
+                    state.general.sidebarItems.push({
+                        disabled: false,
+                        id: 'Radio',
+                        label: i18n.t('page.sidebar.radio'),
+                        route: AppRoute.RADIO,
+                    });
+                }
+
+                // Version 16 introduced a bug where the release channel may have been reset
+                // to the latest channel. This is to revert it.
+                if (version === 16) {
+                    state.window.releaseChannel = 'beta';
+                }
+
                 return persistedState;
             },
             name: 'store_settings',
-            version: 14,
+            version: 17,
         },
     ),
 );
@@ -1485,3 +1604,5 @@ export const usePrimaryColor = () => useSettingsStore((store) => store.general.a
 export const usePlayerbarSlider = () => useSettingsStore((store) => store.general.playerbarSlider);
 
 export const useGenreTarget = () => useSettingsStore((store) => store.general.genreTarget);
+
+export const useAutoDJSettings = () => useSettingsStore((store) => store.autoDJ, shallow);

@@ -105,7 +105,8 @@
         "clean": "清除",
         "explicitStatus": "Explicit狀態",
         "explicit": "Explicit",
-        "gridRows": "網格行"
+        "gridRows": "網格行",
+        "noFilters": "未設定任何過濾器"
     },
     "error": {
         "endpointNotImplementedError": "{{serverType}} 尚未實現端點 {{endpoint}}",
@@ -131,7 +132,9 @@
         "badValue": "無效選項“{{value}}”。該值不再存在",
         "networkError": "發生網路錯誤",
         "notificationDenied": "通知權限被拒絕。此設定無效",
-        "openError": "無法開啟檔案"
+        "openError": "無法開啟檔案",
+        "multipleServerSaveQueueError": "播放佇列中包含不是來自目前伺服器的歌曲，此操作不受支援",
+        "saveQueueFailed": "儲存播放佇列失敗"
     },
     "page": {
         "contextMenu": {
@@ -176,7 +179,8 @@
             "title": "$t(common.home)",
             "mostPlayed": "最多播放",
             "newlyAdded": "最近新增的發行",
-            "recentlyReleased": "最近發佈"
+            "recentlyReleased": "最近發佈",
+            "genres": "$t(entity.genre_other)"
         },
         "appMenu": {
             "openBrowserDevtools": "打開瀏覽器開發者工具",
@@ -242,7 +246,9 @@
             "lyrics": "歌詞",
             "transcoding": "轉碼",
             "discord": "Discord",
-            "queryBuilder": "查詢建構器"
+            "queryBuilder": "查詢建構器",
+            "playerFilters": "播放過濾器",
+            "logger": "日誌記錄器"
         },
         "albumArtistList": {
             "title": "$t(entity.albumArtist_other)"
@@ -276,7 +282,8 @@
             "playlists": "$t(entity.playlist_other)",
             "myLibrary": "我的資料庫",
             "shared": "已分享 $t(entity.playlist_other)",
-            "favorites": "$t(entity.favorite_other)"
+            "favorites": "$t(entity.favorite_other)",
+            "radio": "$t(entity.radioStation_other)"
         },
         "trackList": {
             "title": "$t(entity.track_other)",
@@ -315,12 +322,15 @@
         },
         "folderList": {
             "title": "$t(entity.folder_other)"
+        },
+        "radioList": {
+            "title": "電台"
         }
     },
     "player": {
         "playbackFetchInProgress": "正在載入歌曲…",
-        "addLast": "新增到尾端",
-        "addNext": "新增到下一首",
+        "addLast": "新增至尾端",
+        "addNext": "新增至下一首",
         "favorite": "收藏",
         "mute": "靜音",
         "muted": "已靜音",
@@ -349,11 +359,15 @@
         "queue_moveToTop": "使所選置底",
         "playSimilarSongs": "播放相似歌曲",
         "viewQueue": "檢視佇列",
-        "addLastShuffled": "新增到尾端 (隨機)",
-        "addNextShuffled": "新增到下一首 (隨機)",
+        "addLastShuffled": "新增至尾端 (隨機)",
+        "addNextShuffled": "新增至下一首 (隨機)",
         "queueType": "佇列類型",
         "queueType_default": "預設",
-        "queueType_priority": "優先"
+        "queueType_priority": "優先",
+        "holdToShuffle": "按住以隨機",
+        "lyrics": "歌詞",
+        "restoreQueueFromServer": "從伺服器還原播放佇列",
+        "saveQueueToServer": "將播放佇列儲存至伺服器"
     },
     "setting": {
         "audioPlayer_description": "選擇用於播放的音訊播放器",
@@ -389,7 +403,7 @@
         "discordUpdateInterval_description": "更新間隔秒數（至少 15 秒）",
         "enableRemote": "啟用遠端控制伺服器",
         "enableRemote_description": "啟用遠端控制伺服器，以允許其他設備控制此應用程式",
-        "exitToTray": "退出時最小化到托盤",
+        "exitToTray": "退出時最小化到系統匣",
         "followLyric": "跟隨目前歌詞",
         "font_description": "設定應用程式使用的字體",
         "fontType": "字體類型",
@@ -434,8 +448,8 @@
         "lyricOffset": "歌詞偏移（毫秒）",
         "lyricOffset_description": "將歌詞偏移指定的毫秒數",
         "lyricFetchProvider_description": "選擇歌詞來源。 來源順序即為搜尋的順序",
-        "minimizeToTray": "最小化到托盤",
-        "minimizeToTray_description": "將應用程式最小化到系統托盤",
+        "minimizeToTray": "最小化到匣",
+        "minimizeToTray_description": "將應用程式最小化到系統匣",
         "minimumScrobbleSeconds": "最小紀錄時間（秒）",
         "minimumScrobbleSeconds_description": "歌曲被記錄為已播放（scrobble）所需的最小播放時間",
         "mpvExecutablePath": "mpv 執行檔路徑",
@@ -470,10 +484,10 @@
         "sidebarConfiguration": "側邊欄設定",
         "sidebarConfiguration_description": "選擇側邊欄包含的項目與順序",
         "sidebarPlaylistList_description": "顯示或隱藏側邊欄歌單清單",
-        "sidePlayQueueStyle": "側邊播放清單樣式",
-        "sidePlayQueueStyle_description": "設置側邊播放清單樣式",
+        "sidePlayQueueStyle": "側邊播放佇列樣式",
+        "sidePlayQueueStyle_description": "設置側邊播放佇列樣式",
         "sidePlayQueueStyle_optionAttached": "吸附",
-        "sidePlayQueueStyle_optionDetached": "不吸附",
+        "sidePlayQueueStyle_optionDetached": "分離",
         "skipDuration": "跳過時長",
         "skipDuration_description": "設置每次按下跳過按鈕將會跳過的時長",
         "skipPlaylistPage": "跳過播放清單頁面",
@@ -492,7 +506,7 @@
         "sampleRate": "取樣率",
         "showSkipButtons_description": "在播放條顯示/隱藏播放按鈕",
         "playbackStyle": "播放風格",
-        "exitToTray_description": "退出應用程式時最小化到系統托盤而非關閉",
+        "exitToTray_description": "退出應用程式時最小化到系統匣而非關閉",
         "followLyric_description": "滾動歌詞到目前播放位置",
         "font": "字體",
         "globalMediaHotkeys_description": "啟用或禁用系統媒體快捷鍵以控制播放",
@@ -563,7 +577,7 @@
         "playerbarOpenDrawer": "播放器列全螢幕切換",
         "playerbarOpenDrawer_description": "允許點擊播放器列以開啟全螢幕播放器",
         "startMinimized": "最小化啟動",
-        "startMinimized_description": "在系統托盤中啟動應用程式",
+        "startMinimized_description": "在系統匣中啟動應用程式",
         "transcode_description": "啟用轉碼到不同格式",
         "transcodeBitrate": "要轉碼的比特率",
         "transcodeBitrate_description": "選擇要轉碼的比特率。 0 表示讓伺服器選擇",
@@ -575,8 +589,8 @@
         "translationApiKey_description": "翻譯的API金鑰（僅限全域服務端點）",
         "translationTargetLanguage": "目標翻譯語言",
         "translationTargetLanguage_description": "翻譯的目標語言",
-        "trayEnabled": "顯示托盤",
-        "trayEnabled_description": "顯示/隱藏托盤圖示/選單。如果停用，則也會停用最小化/退出到托盤",
+        "trayEnabled": "顯示系統匣",
+        "trayEnabled_description": "顯示/隱藏系統匣圖示/選單。如果停用，將同時停用最小化/退出到系統匣",
         "volumeWidth": "音量條寬度",
         "volumeWidth_description": "音量條的寬度",
         "webAudio": "使用網頁音訊",
@@ -625,7 +639,7 @@
         "notify_description": "當歌曲變更時顯示通知",
         "playerbarSlider": "播放進度條",
         "playerbarSliderType_optionSlider": "滑桿",
-        "playerbarSliderType_optionWaveform": "波型",
+        "playerbarSliderType_optionWaveform": "波形",
         "playerbarWaveformAlign": "波形對齊",
         "playerbarWaveformAlign_optionTop": "靠上對齊",
         "playerbarWaveformAlign_optionCenter": "置中對齊",
@@ -647,7 +661,23 @@
         "queryBuilderCustomFields_description": "在查詢建構器中新增自訂欄位",
         "followCurrentSong_description": "自動將播放佇列捲動至當前播放的歌曲",
         "followCurrentSong": "跟隨當前歌曲",
-        "playerbarSlider_description": "不建議在網路速度緩慢或計費的網路下使用波形"
+        "playerbarSlider_description": "不建議在網路速度緩慢或計費的網路下使用波形",
+        "playerFilters": "從佇列中過濾歌曲",
+        "playerFilters_description": "根據以下條件，排除要新增至佇列中的歌曲",
+        "autoDJ": "Auto DJ",
+        "autoDJ_description": "自動將相似的歌曲加入到播放佇列",
+        "autoDJ_itemCount": "歌曲數量",
+        "autoDJ_itemCount_description": "在啟用Auto DJ時嘗試加入佇列的歌曲數量",
+        "autoDJ_timing_description": "佇列中剩餘多少歌曲時啟動 Auto DJ",
+        "autoDJ_timing": "觸發時機",
+        "logLevel": "log等級",
+        "logLevel_description": "設定要顯示的最低日誌等級。Debug 會顯示所有日誌，Error 僅會顯示錯誤訊息",
+        "logLevel_optionDebug": "Debug",
+        "logLevel_optionError": "Error",
+        "logLevel_optionInfo": "Info",
+        "logLevel_optionWarn": "Warn",
+        "useThemeAccentColor": "使用主題強調色",
+        "useThemeAccentColor_description": "使用所選主題中定義的主要顏色，而非自訂的強調色"
     },
     "table": {
         "config": {
@@ -713,7 +743,9 @@
                 "songCount": "$t(entity.track_other)",
                 "albumCount": "$t(entity.album_other)",
                 "genreBadge": "$t(entity.genre_one) (徽章)",
-                "image": "圖片"
+                "image": "圖片",
+                "bitDepth": "$t(common.bitDepth)",
+                "sampleRate": "$t(common.sampleRate)"
             },
             "view": {
                 "table": "表格",
@@ -746,7 +778,9 @@
             "trackNumber": "曲目編號",
             "size": "$t(common.size)",
             "codec": "$t(common.codec)",
-            "owner": "擁有者"
+            "owner": "擁有者",
+            "bitDepth": "$t(common.bitDepth)",
+            "sampleRate": "$t(common.sampleRate)"
         }
     },
     "action": {
@@ -773,12 +807,17 @@
             "musicbrainz": "在MusicBrainz開啟"
         },
         "downloadStarted": "已開始下載 {{count}} 項內容",
-        "largeFetch": "這項操作將會嘗試從您的伺服器擷取 {{count}} 個項目",
         "moveItems": "移動項目",
         "shuffle": "隨機播放",
         "shuffleAll": "全部隨機播放",
         "shuffleSelected": "隨機播放選取項目",
-        "viewMore": "查看更多"
+        "viewMore": "查看更多",
+        "moveUp": "向上移動",
+        "moveDown": "向下移動",
+        "holdToMoveToTop": "按住以移動至頂部",
+        "holdToMoveToBottom": "按住以移動至底部",
+        "createRadioStation": "創建 $t(entity.radioStation_one)",
+        "deleteRadioStation": "刪除 $t(entity.radioStation_one)"
     },
     "entity": {
         "album_other": "專輯",
@@ -798,7 +837,9 @@
         "trackWithCount_other": "{{count}} 首曲目",
         "albumWithCount_other": "{{count}} 張專輯",
         "play_other": "{{count}}次播放",
-        "song_other": "歌曲"
+        "song_other": "歌曲",
+        "radioStation_other": "電台",
+        "radioStationWithCount_other": "{{count}} 個電台"
     },
     "filter": {
         "albumCount": "$t(entity.album_other)數",
@@ -903,7 +944,8 @@
         "editPlaylist": {
             "title": "編輯$t(entity.playlist_one)",
             "publicJellyfinNote": "Jellyfin 出於某種原因，不會顯示播放清單是否公開。如果您希望保持公開狀態，請選擇以下輸入",
-            "success": "$t(entity.playlist_one) 更新成功"
+            "success": "$t(entity.playlist_one) 更新成功",
+            "editNote": "不建議手動編輯大型播放清單，你確定要承擔覆寫現有播放清單可能造成的資料遺失風險嗎？"
         },
         "shareItem": {
             "allowDownloading": "允許下載",
@@ -919,8 +961,8 @@
             "title": "私人模式"
         },
         "largeFetchConfirmation": {
-            "title": "將項目加入佇列",
-            "description": "這個請求將嘗試從伺服器擷取 {{count}} 個項目"
+            "title": "將項目加入播放佇列",
+            "description": "此操作將新增目前篩選檢視中的所有項目"
         },
         "shuffleAll": {
             "title": "隨機播放",
@@ -932,6 +974,16 @@
             "input_played_optionAll": "所有曲目",
             "input_played_optionUnplayed": "僅未播放的曲目",
             "input_played_optionPlayed": "僅播放過的曲目"
+        },
+        "createRadioStation": {
+            "success": "電台創建成功",
+            "title": "創建電台",
+            "input_homepageUrl": "首頁連結",
+            "input_name": "名稱",
+            "input_streamUrl": "串流網址"
+        },
+        "saveQueue": {
+            "success": "已將播放佇列儲存至伺服器"
         }
     },
     "releaseType": {
@@ -964,5 +1016,24 @@
     "queryBuilder": {
         "standardTags": "標準標籤",
         "customTags": "自訂標籤"
+    },
+    "filterOperator": {
+        "after": "在…之後",
+        "afterDate": "晚於 (日期)",
+        "before": "在…之前",
+        "beforeDate": "早於 (日期)",
+        "contains": "包含",
+        "endsWith": "以…結尾",
+        "inPlaylist": "在…之中",
+        "inTheRange": "在範圍內",
+        "inTheRangeDate": "在（日期）範圍內",
+        "is": "是",
+        "isNot": "不是",
+        "isGreaterThan": "大於",
+        "isLessThan": "小於",
+        "matchesRegex": "符合正規表達式",
+        "notContains": "不包含",
+        "notInPlaylist": "不在…之中",
+        "startsWith": "以…開頭"
     }
 }

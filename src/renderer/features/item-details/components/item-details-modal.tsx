@@ -228,10 +228,9 @@ const AlbumArtistPropertyMapping: ItemDetailRow<AlbumArtist>[] = [
         label: 'common.biography',
         render: (artist) =>
             artist.biography ? (
-                <Spoiler
-                    dangerouslySetInnerHTML={{ __html: sanitize(artist.biography) }}
-                    maxHeight={50}
-                />
+                <Spoiler>
+                    <Text dangerouslySetInnerHTML={{ __html: sanitize(artist.biography) }} />
+                </Spoiler>
             ) : null,
     },
     { key: 'id', label: 'filter.id' },

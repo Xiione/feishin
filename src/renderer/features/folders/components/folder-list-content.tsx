@@ -84,9 +84,11 @@ interface FolderListViewProps {
 }
 
 export const FolderListView = ({ folderQuery }: FolderListViewProps) => {
-    const { display, table } = useListSettings(ItemListKey.SONG);
+    const { table } = useListSettings(ItemListKey.SONG);
+    const display = ListDisplayType.TABLE;
     const { setItemCount } = useListContext();
-    const { navigateToFolder } = useFolderListFilters();
+    const { currentFolderId, navigateToFolder } = useFolderListFilters();
+    const serverId = useCurrentServerId();
 
     const { handleOnScrollEnd, scrollOffset } = useItemListScrollPersist({
         enabled: true,
@@ -187,6 +189,7 @@ export const FolderListView = ({ folderQuery }: FolderListViewProps) => {
                         type: 'offset',
                     }}
                     itemType={LibraryItem.FOLDER}
+                    key={`folder-${serverId}-${currentFolderId}`}
                     onColumnReordered={handleColumnReordered}
                     onColumnResized={handleColumnResized}
                     onScrollEnd={handleOnScrollEnd}

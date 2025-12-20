@@ -159,7 +159,7 @@ const PlaylistQueryEditor = ({
 
     return (
         <div className="query-editor-container">
-            <Stack gap={0} h="100%" mah="50dvh" p="md" w="100%">
+            <Stack gap={0} h="100%" mah="30dvh" p="md" w="100%">
                 <Group justify="space-between" pb="md" wrap="nowrap">
                     <Group gap="sm" wrap="nowrap">
                         <Button
@@ -178,12 +178,7 @@ const PlaylistQueryEditor = ({
                         </Button>
                     </Group>
                     <Group gap="xs">
-                        <Button
-                            disabled={!isQueryBuilderExpanded}
-                            onClick={openPreviewModal}
-                            size="sm"
-                            variant="subtle"
-                        >
+                        <Button onClick={openPreviewModal} size="sm" variant="subtle">
                             {t('common.preview', { postProcess: 'titleCase' })}
                         </Button>
                         <Button
@@ -386,10 +381,11 @@ const PlaylistDetailSongListRoute = () => {
         });
     };
 
-    const isSmartPlaylist =
+    const isSmartPlaylist = Boolean(
         !detailQuery?.isLoading &&
-        detailQuery?.data?.rules &&
-        server?.type === ServerType.NAVIDROME;
+            detailQuery?.data?.rules &&
+            server?.type === ServerType.NAVIDROME,
+    );
 
     const [showQueryBuilder, setShowQueryBuilder] = useState(false);
     const [isQueryBuilderExpanded, setIsQueryBuilderExpanded] = useState(false);
@@ -405,16 +401,23 @@ const PlaylistDetailSongListRoute = () => {
     };
 
     const [itemCount, setItemCount] = useState<number | undefined>(undefined);
+    const [listData, setListData] = useState<unknown[]>([]);
+    const [mode, setMode] = useState<'edit' | 'view'>('view');
 
     const providerValue = useMemo(() => {
         return {
             customFilters: undefined,
             id: playlistId,
+            isSmartPlaylist,
             itemCount,
+            listData,
+            mode,
             pageKey: ItemListKey.PLAYLIST_SONG,
             setItemCount,
+            setListData,
+            setMode,
         };
-    }, [playlistId, itemCount]);
+    }, [playlistId, isSmartPlaylist, itemCount, listData, mode]);
 
     return (
         <AnimatedPage key={`playlist-detail-songList-${playlistId}`}>

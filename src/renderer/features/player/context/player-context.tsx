@@ -23,6 +23,7 @@ import { songsQueries } from '/@/renderer/features/songs/api/songs-api';
 import { AddToQueueType, usePlayerActions, useSettingsStore } from '/@/renderer/store';
 import { LogCategory, logFn } from '/@/renderer/utils/logger';
 import { logMsg } from '/@/renderer/utils/logger-message';
+import { shuffle as shuffleArray } from '/@/renderer/utils/shuffle';
 import { sortSongsByFetchedOrder } from '/@/shared/api/utils';
 import { Checkbox } from '/@/shared/components/checkbox/checkbox';
 import { ConfirmModal } from '/@/shared/components/modal/modal';
@@ -31,6 +32,7 @@ import { Text } from '/@/shared/components/text/text';
 import { toast } from '/@/shared/components/toast/toast';
 import { useLocalStorage } from '/@/shared/hooks/use-local-storage';
 import {
+    AlbumListSort,
     instanceOfCancellationError,
     LibraryItem,
     PlaylistSongListResponse,
@@ -46,7 +48,6 @@ export interface PlayerContext {
         id: string[],
         itemType: LibraryItem,
         type: AddToQueueType,
-        skipConfirmation?: boolean,
     ) => void;
     addToQueueByListQuery: (
         serverId: string,
@@ -79,6 +80,7 @@ export interface PlayerContext {
         itemType: LibraryItem,
         isFavorite: boolean,
     ) => void;
+    setQueue: (data: Song[], index?: number, position?: number) => void;
     setRating: (serverId: string, id: string[], itemType: LibraryItem, rating: number) => void;
     setRepeat: (repeat: PlayerRepeat) => void;
     setShuffle: (shuffle: PlayerShuffle) => void;
@@ -115,6 +117,7 @@ export const PlayerContext = createContext<PlayerContext>({
     moveSelectedToNext: () => {},
     moveSelectedToTop: () => {},
     setFavorite: () => {},
+    setQueue: () => {},
     setRating: () => {},
     setRepeat: () => {},
     setShuffle: () => {},
@@ -151,62 +154,57 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
     const queryClient = useQueryClient();
     const storeActions = usePlayerActions();
     const timeoutIds = useRef<null | Record<string, ReturnType<typeof setTimeout>>>({});
-    const queueFetchConfirmThreshold = 100;
 
     const [doNotShowAgain, setDoNotShowAgain] = useLocalStorage({
         defaultValue: false,
         key: 'large_fetch_confirmation',
     });
 
-    const confirmLargeFetch = useCallback(
-        (itemCount: number): Promise<boolean> => {
-            if (doNotShowAgain) {
-                return Promise.resolve(true);
-            }
+    const confirmLargeFetch = useCallback((): Promise<boolean> => {
+        if (doNotShowAgain) {
+            return Promise.resolve(true);
+        }
 
-            return new Promise((resolve) => {
-                openModal({
-                    children: (
-                        <ConfirmModal
-                            labels={{
-                                cancel: t('common.cancel', { postProcess: 'titleCase' }),
-                                confirm: t('common.confirm', { postProcess: 'titleCase' }),
-                            }}
-                            onCancel={() => {
-                                resolve(false);
-                                closeAllModals();
-                            }}
-                            onConfirm={() => {
-                                resolve(true);
-                                closeAllModals();
-                            }}
-                        >
-                            <Stack>
-                                <Text>
-                                    {t('action.largeFetch', {
-                                        count: itemCount,
-                                        postProcess: 'sentenceCase',
-                                    })}
-                                </Text>
-                                <Checkbox
-                                    label={t('common.doNotShowAgain', {
-                                        postProcess: 'sentenceCase',
-                                    })}
-                                    onChange={(event) => {
-                                        setDoNotShowAgain(event.currentTarget.checked);
-                                    }}
-                                />
-                            </Stack>
-                        </ConfirmModal>
-                    ),
-                    title: t('common.areYouSure', {
-                        postProcess: 'sentenceCase',
-                    }),
-                });
+        return new Promise((resolve) => {
+            openModal({
+                children: (
+                    <ConfirmModal
+                        labels={{
+                            cancel: t('common.cancel', { postProcess: 'titleCase' }),
+                            confirm: t('common.confirm', { postProcess: 'titleCase' }),
+                        }}
+                        onCancel={() => {
+                            resolve(false);
+                            closeAllModals();
+                        }}
+                        onConfirm={() => {
+                            resolve(true);
+                            closeAllModals();
+                        }}
+                    >
+                        <Stack>
+                            <Text>
+                                {t('form.largeFetchConfirmation.description', {
+                                    postProcess: 'sentenceCase',
+                                })}
+                            </Text>
+                            <Checkbox
+                                label={t('common.doNotShowAgain', {
+                                    postProcess: 'sentenceCase',
+                                })}
+                                onChange={(event) => {
+                                    setDoNotShowAgain(event.currentTarget.checked);
+                                }}
+                            />
+                        </Stack>
+                    </ConfirmModal>
+                ),
+                title: t('form.largeFetchConfirmation.title', {
+                    postProcess: 'sentenceCase',
+                }),
             });
-        },
-        [doNotShowAgain, setDoNotShowAgain, t],
-    );
+        });
+    }, [doNotShowAgain, setDoNotShowAgain, t]);
 
     const addToQueueByData = useCallback(
         (data: Song[], type: AddToQueueType, playSongId?: string) => {
@@ -241,20 +239,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     const addToQueueByFetch = useCallback(
-        async (
-            serverId: string,
-            id: string[],
-            itemType: LibraryItem,
-            type: AddToQueueType,
-            skipConfirmation?: boolean,
-        ) => {
-            if (!skipConfirmation && id.length > queueFetchConfirmThreshold) {
-                const confirmed = await confirmLargeFetch(id.length);
-                if (!confirmed) {
-                    return;
-                }
-            }
-
+        async (serverId: string, id: string[], itemType: LibraryItem, type: AddToQueueType) => {
             let toastId: null | string = null;
             const fetchId = nanoid();
 
@@ -270,6 +255,11 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
                             queryClient.cancelQueries({
                                 exact: false,
                                 queryKey: getRootQueryKey(itemType, serverId),
+                            });
+
+                            queryClient.cancelQueries({
+                                exact: false,
+                                queryKey: queryKeys.player.fetch(),
                             });
                         },
                         title: t('player.playbackFetchInProgress', {
@@ -303,7 +293,14 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
                     toast.hide(toastId);
                 }
 
-                const sortedSongs = sortSongsByFetchedOrder(songs, id, itemType);
+                let sortedSongs: Song[] = [];
+
+                // Playlists should use the native order of the playlist
+                if (itemType === LibraryItem.PLAYLIST) {
+                    sortedSongs = songs;
+                } else {
+                    sortedSongs = sortSongsByFetchedOrder(songs, id, itemType);
+                }
 
                 const filters = useSettingsStore.getState().playback.filters;
                 const filteredSongs = filterSongsByPlayerFilters(sortedSongs, filters);
@@ -331,7 +328,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
                 });
             }
         },
-        [confirmLargeFetch, queueFetchConfirmThreshold, queryClient, storeActions, t],
+        [queryClient, storeActions, t],
     );
 
     const addToQueueByListQuery = useCallback(
@@ -345,10 +342,17 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
             });
 
             try {
-                // Get total count first
                 let totalCount = 0;
                 let listQueryFn: any;
                 let listCountQueryFn: any;
+
+                // Special handling for albums with random sort: fetch in name order, then shuffle client-side
+                const isAlbumRandomSort =
+                    itemType === LibraryItem.ALBUM && query.sortBy === AlbumListSort.RANDOM;
+
+                const fetchQuery = isAlbumRandomSort
+                    ? { ...query, sortBy: AlbumListSort.NAME }
+                    : query;
 
                 switch (itemType) {
                     case LibraryItem.ALBUM: {
@@ -384,10 +388,11 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
                 // Get total count
                 const countResult = (await queryClient.fetchQuery({
                     ...listCountQueryFn({
-                        query: { ...query },
+                        query: { ...fetchQuery },
                         serverId,
                     }),
                     gcTime: 0,
+                    queryKey: queryKeys.player.fetch(),
                     staleTime: 0,
                 })) as number;
                 totalCount = countResult || 0;
@@ -395,21 +400,9 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
                 const allResults: Song[] | string[] = [];
                 const pageSize = 500;
 
-                // Calculate the number of fetches needed
-                let numberOfFetches = 0;
-                if (itemType === LibraryItem.SONG) {
-                    // For songs, the number of fetches is based on pagination
-                    numberOfFetches = Math.ceil(totalCount / pageSize);
-                } else {
-                    const paginationFetches = Math.ceil(totalCount / pageSize);
-                    numberOfFetches = paginationFetches + totalCount;
-                }
-
-                if (numberOfFetches > queueFetchConfirmThreshold) {
-                    const confirmed = await confirmLargeFetch(numberOfFetches);
-                    if (!confirmed) {
-                        return;
-                    }
+                const confirmed = await confirmLargeFetch();
+                if (!confirmed) {
+                    return;
                 }
 
                 // Start timeout only after confirmation (if needed)
@@ -433,6 +426,11 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
                                     exact: false,
                                     queryKey: getRootQueryKey(itemType, serverId),
                                 });
+
+                                queryClient.cancelQueries({
+                                    exact: false,
+                                    queryKey: queryKeys.player.fetch(),
+                                });
                             },
                             title: t('player.playbackFetchInProgress', {
                                 postProcess: 'sentenceCase',
@@ -444,7 +442,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
 
                 while (startIndex < totalCount) {
                     const pageQuery = {
-                        ...query,
+                        ...fetchQuery,
                         limit: pageSize,
                         startIndex,
                     };
@@ -455,6 +453,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
                             serverId,
                         }),
                         gcTime: 0,
+                        queryKey: queryKeys.player.fetch({ startIndex }),
                         staleTime: 0,
                     })) as { items: any[] };
 
@@ -484,10 +483,16 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
                     toast.hide(toastId);
                 }
 
+                // Shuffle album IDs client-side if this was a random sort request
+                let finalResults = allResults;
+                if (isAlbumRandomSort && itemType === LibraryItem.ALBUM) {
+                    finalResults = shuffleArray(allResults as string[]) as typeof allResults;
+                }
+
                 if (itemType === LibraryItem.SONG) {
-                    addToQueueByData(allResults as Song[], type);
+                    addToQueueByData(finalResults as Song[], type);
                 } else {
-                    await addToQueueByFetch(serverId, allResults as string[], itemType, type, true);
+                    await addToQueueByFetch(serverId, finalResults as string[], itemType, type);
                 }
             } catch (err: any) {
                 if (instanceOfCancellationError(err)) {
@@ -638,6 +643,22 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
 
         storeActions.mediaSkipForward();
     }, [storeActions]);
+
+    const setQueue = useCallback(
+        (data: Song[], index?: number, position?: number) => {
+            logFn.debug(logMsg[LogCategory.PLAYER].setQueue, {
+                category: LogCategory.PLAYER,
+                meta: {
+                    data: data.length,
+                    index,
+                    position,
+                },
+            });
+
+            storeActions.setQueue(data, index, position);
+        },
+        [storeActions],
+    );
 
     const setSpeed = useCallback(
         (speed: number) => {
@@ -852,6 +873,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
             moveSelectedToNext,
             moveSelectedToTop,
             setFavorite,
+            setQueue,
             setRating,
             setRepeat,
             setShuffle,
@@ -870,7 +892,6 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
             clearQueue,
             clearSelected,
             decreaseVolume,
-            setSpeed,
             increaseVolume,
             mediaNext,
             mediaPause,
@@ -888,9 +909,11 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
             moveSelectedToNext,
             moveSelectedToTop,
             setFavorite,
+            setQueue,
             setRating,
             setRepeat,
             setShuffle,
+            setSpeed,
             setVolume,
             shuffle,
             shuffleAll,
@@ -1006,6 +1029,7 @@ export async function fetchSongsByItemType(
 }
 
 export const useIsPlayerFetching = () => {
-    const fetcherCount = useIsFetching({ queryKey: queryKeys.player.fetch() });
-    return fetcherCount > 0;
+    const playerFetchCount = useIsFetching({ queryKey: queryKeys.player.fetch() });
+
+    return playerFetchCount > 0;
 };
