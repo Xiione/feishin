@@ -145,6 +145,7 @@ const normalizeSong = (
         _serverId: server?.id || '',
         _serverType: ServerType.JELLYFIN,
         album: item.Album,
+        albumArtistName: item.AlbumArtist || '',
         albumArtists: item.AlbumArtists?.map((entry) => ({
             id: entry.Id,
             imageId: entry.Id,
@@ -154,7 +155,7 @@ const normalizeSong = (
             userRating: null,
         })),
         albumId: item.AlbumId || `dummy/${item.Id}`,
-        artistName: item?.ArtistItems?.[0]?.Name || item?.AlbumArtists?.[0]?.Name,
+        artistName: item?.ArtistItems?.map((entry) => entry.Name).join(', ') || '',
         artists: (item?.ArtistItems?.length ? item.ArtistItems : item.AlbumArtists)?.map(
             (entry) => ({
                 id: entry.Id,
@@ -231,7 +232,7 @@ const normalizeAlbum = (
         _itemType: LibraryItem.ALBUM,
         _serverId: server?.id || '',
         _serverType: ServerType.JELLYFIN,
-        albumArtist: item.AlbumArtist,
+        albumArtistName: item.AlbumArtist,
         albumArtists:
             item.AlbumArtists.map((entry) => ({
                 id: entry.Id,
@@ -279,6 +280,7 @@ const normalizeAlbum = (
         playCount: item.UserData?.PlayCount || 0,
         recordLabels: item.Studios?.map((entry) => entry.Name) || [],
         releaseDate: item.PremiereDate || null,
+        releaseType: null,
         releaseTypes: [],
         releaseYear: item.ProductionYear || null,
         size: null,

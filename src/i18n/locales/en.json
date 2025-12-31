@@ -102,6 +102,7 @@
         "minimize": "minimize",
         "modified": "modified",
         "mbid": "MusicBrainz ID",
+        "mood": "mood",
         "name": "name",
         "no": "no",
         "none": "none",
@@ -311,6 +312,9 @@
             "input_password": "password",
             "input_preferInstantMix": "prefer instant mix",
             "input_preferInstantMixDescription": "only use instant mix to get similar songs. useful if you have plugins that modify this behavior",
+            "input_preferRemoteUrl": "prefer public url",
+            "input_remoteUrl": "public url",
+            "input_remoteUrlPlaceholder": "optional: public url for external features",
             "input_savePassword": "save password",
             "input_url": "url",
             "input_username": "username",
@@ -698,6 +702,8 @@
         "artistBackgroundBlur_description": "adjusts the amount of blur applied to the artist background image",
         "artistConfiguration": "album artist page configuration",
         "artistConfiguration_description": "configure what items are shown, and in what order, on the album artist page",
+        "artistReleaseTypeConfiguration": "artist release type configuration",
+        "artistReleaseTypeConfiguration_description": "configure what release types are shown, and in what order, on the album artist page",
         "audioDevice_description": "select the audio device to use for playback (web player only)",
         "audioDevice": "audio device",
         "audioExclusiveMode_description": "enable exclusive output mode. In this mode, the system is usually locked out, and only mpv will be able to output audio",
@@ -852,6 +858,8 @@
         "minimumScrobbleSeconds": "minimum scrobble (seconds)",
         "mpvExecutablePath_description": "sets the path to the mpv executable. if left empty, the default path will be used",
         "mpvExecutablePath": "mpv executable path",
+        "mpvExtraParameters": "mpv extra parameters",
+        "mpvExtraParameters_description": "extra arguments to pass to mpv",
         "mpvExtraParameters_help": "one per line",
         "musicbrainz_description": "show links to MusicBrainz on artist/album pages, where MusicBrainz ID exists",
         "musicbrainz": "show MusicBrainz links",
@@ -1150,6 +1158,8 @@
         "position": "Position",
         "level": "Level",
         "remove": "Remove",
+        "pasteGradient": "Paste Gradient",
+        "pasteGradientPlaceholder": "Paste gradient JSON here...",
         "custom": "Custom",
         "builtIn": "Built-in",
         "colors": "Colors",
@@ -1204,16 +1214,16 @@
         "showScaleY": "Show Scale Y",
         "options": {
             "mode": {
-                "bars": "[0] Bars",
-                "circle": "[1] Circle",
-                "wave": "[2] Wave",
-                "rainbow": "[3] Rainbow",
-                "rings": "[4] Rings",
-                "mirror": "[5] Mirror",
-                "line": "[6] Line",
-                "particles": "[7] Particles",
-                "fullOctave": "[8] Full octave / 10 bands",
-                "outlineBars": "[10] Outline bars"
+                "0": "[0] Discrete Frequencies",
+                "1": "[1] 1/24th octave / 240 bands",
+                "2": "[2] 1/12th octave / 120 bands",
+                "3": "[3] 1/8th octave / 80 bands",
+                "4": "[4] 1/6th octave / 60 bands",
+                "5": "[5] 1/4th octave / 40 bands",
+                "6": "[6] 1/3rd octave / 30 bands",
+                "7": "[7] Half octave / 20 bands",
+                "8": "[8] Full octave / 10 bands",
+                "10": "[10] Line / Area graph"
             },
             "colorMode": {
                 "gradient": "Gradient",
@@ -1234,10 +1244,11 @@
                 "dualVertical": "Dual-Vertical"
             },
             "frequencyScale": {
-                "bark": "Bark",
-                "linear": "Linear",
-                "log": "Log",
-                "mel": "Mel"
+                "none": "None",
+                "bark": "Bark Scale",
+                "linear": "Linear Scale",
+                "log": "Log Scale",
+                "mel": "Mel Scale"
             },
             "weightingFilter": {
                 "none": "None",

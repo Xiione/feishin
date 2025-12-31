@@ -16,6 +16,7 @@ import {
     useItemSelectionState,
 } from '/@/renderer/components/item-list/helpers/item-list-state';
 import { ItemControls } from '/@/renderer/components/item-list/types';
+import { JoinedArtists } from '/@/renderer/features/albums/components/joined-artists';
 import { useDragDrop } from '/@/renderer/hooks/use-drag-drop';
 import { AppRoute } from '/@/renderer/router/routes';
 import { useGeneralSettings } from '/@/renderer/store';
@@ -313,7 +314,7 @@ const CompactItemCard = ({
                     className={clsx(styles.image, {
                         [styles.isRound]: isRound,
                     })}
-                    id={data?.id}
+                    id={data?.imageId}
                     itemType={itemType}
                     src={(data as Album | AlbumArtist | Playlist | Song)?.imageUrl}
                 />
@@ -327,7 +328,7 @@ const CompactItemCard = ({
                             internalState={internalState}
                             item={data}
                             itemType={itemType}
-                            showRating={hasRating}
+                            showRating={showRating}
                             type="compact"
                         />
                     )}
@@ -531,7 +532,7 @@ const DefaultItemCard = ({
             <>
                 <ItemImage
                     className={clsx(styles.image, { [styles.isRound]: isRound })}
-                    id={data?.id}
+                    id={data?.imageId}
                     itemType={itemType}
                     src={(data as Album | AlbumArtist | Playlist | Song)?.imageUrl}
                 />
@@ -895,7 +896,7 @@ const PosterItemCard = ({
     );
 };
 
-export const getDataRows = (): DataRow[] => {
+export const getDataRows = (type?: 'compact' | 'default' | 'poster'): DataRow[] => {
     return [
         {
             format: (data) => {
@@ -953,21 +954,18 @@ export const getDataRows = (): DataRow[] => {
         {
             format: (data) => {
                 if ('albumArtists' in data && Array.isArray(data.albumArtists)) {
-                    return (data as Album | Song).albumArtists.map((artist, index) => (
-                        <Fragment key={artist.id}>
-                            <Link
-                                state={{ item: artist }}
-                                to={generatePath(AppRoute.LIBRARY_ALBUM_ARTISTS_DETAIL, {
-                                    albumArtistId: artist.id,
-                                })}
-                            >
-                                {artist.name}
-                            </Link>
-                            {index < (data as Album | Song).albumArtists.length - 1 && (
-                                <Separator />
-                            )}
-                        </Fragment>
-                    ));
+                    return (
+                        <JoinedArtists
+                            artistName={data.albumArtistName}
+                            artists={data.albumArtists}
+                            linkProps={{ fw: 400, isMuted: true }}
+                            rootTextProps={{
+                                fw: 400,
+                                isMuted: type === 'compact' ? false : true,
+                                size: 'sm',
+                            }}
+                        />
+                    );
                 }
                 return '';
             },
@@ -1107,7 +1105,7 @@ export const getDataRows = (): DataRow[] => {
         {
             format: (data) => {
                 if ('albumCount' in data && data.albumCount !== null) {
-                    return String(data.albumCount);
+                    return i18n.t('entity.albumWithCount', { count: data.albumCount });
                 }
                 return '';
             },

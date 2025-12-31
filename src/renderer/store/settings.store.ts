@@ -17,6 +17,7 @@ import {
     PLAYLIST_TABLE_COLUMNS,
     SONG_TABLE_COLUMNS,
 } from '/@/renderer/components/item-list/item-table-list/default-columns';
+import { audiomotionanalyzerPresets } from '/@/renderer/features/visualizer/components/audiomotionanalyzer/presets';
 import { AppRoute } from '/@/renderer/router/routes';
 import { mergeOverridingColumns } from '/@/renderer/store/utils';
 import { FontValueSchema } from '/@/renderer/types/fonts';
@@ -56,6 +57,27 @@ const ArtistItemSchema = z.enum([
     'recentAlbums',
     'similarArtists',
     'topSongs',
+]);
+
+const ArtistReleaseTypeItemSchema = z.enum([
+    'releaseTypeAlbum',
+    'releaseTypeEp',
+    'releaseTypeSingle',
+    'releaseTypeBroadcast',
+    'releaseTypeOther',
+    'releaseTypeCompilation',
+    'appearsOn',
+    'releaseTypeAudioDrama',
+    'releaseTypeAudiobook',
+    'releaseTypeDemo',
+    'releaseTypeDjMix',
+    'releaseTypeFieldRecording',
+    'releaseTypeInterview',
+    'releaseTypeLive',
+    'releaseTypeMixtapeStreet',
+    'releaseTypeRemix',
+    'releaseTypeSoundtrack',
+    'releaseTypeSpokenWord',
 ]);
 
 const BindingActionsSchema = z.enum([
@@ -350,6 +372,7 @@ export const GeneralSettingsSchema = z.object({
     artistBackgroundBlur: z.number(),
     artistItems: z.array(SortableItemSchema(ArtistItemSchema)),
     artistRadioCount: z.number(),
+    artistReleaseTypeItems: z.array(SortableItemSchema(ArtistReleaseTypeItemSchema)),
     buttonSize: z.number(),
     combinedLyricsAndVisualizer: z.boolean(),
     disabledContextMenu: z.record(z.string(), z.boolean()),
@@ -587,6 +610,27 @@ export enum ArtistItem {
     TOP_SONGS = 'topSongs',
 }
 
+export enum ArtistReleaseTypeItem {
+    APPEARS_ON = 'appearsOn',
+    RELEASE_TYPE_ALBUM = 'releaseTypeAlbum',
+    RELEASE_TYPE_AUDIO_DRAMA = 'releaseTypeAudioDrama',
+    RELEASE_TYPE_AUDIOBOOK = 'releaseTypeAudiobook',
+    RELEASE_TYPE_BROADCAST = 'releaseTypeBroadcast',
+    RELEASE_TYPE_COMPILATION = 'releaseTypeCompilation',
+    RELEASE_TYPE_DEMO = 'releaseTypeDemo',
+    RELEASE_TYPE_DJ_MIX = 'releaseTypeDjMix',
+    RELEASE_TYPE_EP = 'releaseTypeEp',
+    RELEASE_TYPE_FIELD_RECORDING = 'releaseTypeFieldRecording',
+    RELEASE_TYPE_INTERVIEW = 'releaseTypeInterview',
+    RELEASE_TYPE_LIVE = 'releaseTypeLive',
+    RELEASE_TYPE_MIXTAPE_STREET = 'releaseTypeMixtapeStreet',
+    RELEASE_TYPE_OTHER = 'releaseTypeOther',
+    RELEASE_TYPE_REMIX = 'releaseTypeRemix',
+    RELEASE_TYPE_SINGLE = 'releaseTypeSingle',
+    RELEASE_TYPE_SOUNDTRACK = 'releaseTypeSoundtrack',
+    RELEASE_TYPE_SPOKENWORD = 'releaseTypeSpokenWord',
+}
+
 export enum BarAlign {
     BOTTOM = 'bottom',
     CENTER = 'center',
@@ -662,6 +706,22 @@ export enum PlayerbarSliderType {
     WAVEFORM = 'waveform',
 }
 
+export enum SidebarItem {
+    ALBUMS = 'Albums',
+    ARTISTS = 'Artists',
+    ARTISTS_ALL = 'Artists-all',
+    FAVORITES = 'Favorites',
+    FOLDERS = 'Folders',
+    GENRES = 'Genres',
+    HOME = 'Home',
+    NOW_PLAYING = 'Now Playing',
+    PLAYLISTS = 'Playlists',
+    RADIO = 'Radio',
+    SEARCH = 'Search',
+    SETTINGS = 'Settings',
+    TRACKS = 'Tracks',
+}
+
 export type DataGridProps = {
     itemGap: 'lg' | 'md' | 'sm' | 'xl' | 'xs';
     itemsPerRow: number;
@@ -690,6 +750,7 @@ export interface SettingsSlice extends z.infer<typeof SettingsStateSchema> {
         reset: () => void;
         resetSampleRate: () => void;
         setArtistItems: (item: SortableItem<ArtistItem>[]) => void;
+        setArtistReleaseTypeItems: (item: SortableItem<ArtistReleaseTypeItem>[]) => void;
         setGenreBehavior: (target: GenreTarget) => void;
         setHomeItems: (item: SortableItem<HomeItem>[]) => void;
         setList: (type: ItemListKey, data: DeepPartial<ItemListSettings>) => void;
@@ -707,7 +768,7 @@ export type SidebarItemType = z.infer<typeof SidebarItemTypeSchema>;
 
 export type SideQueueType = z.infer<typeof SideQueueTypeSchema>;
 
-export type SortableItem<T> = {
+export type SortableItem<T extends string> = {
     disabled: boolean;
     id: T;
 };
@@ -802,6 +863,11 @@ const artistItems = Object.values(ArtistItem).map((item) => ({
     id: item,
 }));
 
+const artistReleaseTypeItems = Object.values(ArtistReleaseTypeItem).map((item) => ({
+    disabled: false,
+    id: item,
+}));
+
 // Determines the default/initial windowBarStyle value based on the current platform.
 const getPlatformDefaultWindowBarStyle = (): Platform => {
     if (utils?.isWindows()) {
@@ -854,6 +920,7 @@ const initialState: SettingsState = {
         artistBackgroundBlur: 3,
         artistItems,
         artistRadioCount: 20,
+        artistReleaseTypeItems,
         buttonSize: 15,
         combinedLyricsAndVisualizer: false,
         disabledContextMenu: {},
@@ -1426,50 +1493,50 @@ const initialState: SettingsState = {
         audiomotionanalyzer: {
             alphaBars: false,
             ansiBands: false,
-            barSpace: 0,
+            barSpace: 0.7,
             channelLayout: 'single',
             colorMode: 'gradient',
             customGradients: [],
             fadePeaks: true,
-            fftSize: 8192,
-            fillAlpha: 1,
+            fftSize: 16384,
+            fillAlpha: 0,
             frequencyScale: 'log',
             gradient: 'prism',
             gravity: 11,
-            ledBars: true,
+            ledBars: false,
             linearAmplitude: false,
             linearBoost: 4,
-            lineWidth: 0,
+            lineWidth: 1.9,
             loRes: false,
             lumiBars: false,
             maxDecibels: -25,
             maxFPS: 0,
-            maxFreq: 8000,
+            maxFreq: 22050,
             minDecibels: -85,
             minFreq: 20,
             mirror: 0,
-            mode: 5,
+            mode: 10,
             noteLabels: false,
             opacity: 1,
             outlineBars: false,
             peakFadeTime: 900,
             peakHoldTime: 500,
             peakLine: true,
-            presets: [],
+            presets: audiomotionanalyzerPresets,
             radial: false,
             radialInvert: false,
             radius: 0.7,
-            reflexAlpha: 0.5,
+            reflexAlpha: 0.1,
             reflexBright: 1,
             reflexFit: false,
-            reflexRatio: 0,
+            reflexRatio: 0.5,
             roundBars: false,
             showFPS: false,
             showPeaks: false,
-            showScaleX: true,
+            showScaleX: false,
             showScaleY: false,
-            smoothing: 0.7,
-            spinSpeed: 0.5,
+            smoothing: 0.6,
+            spinSpeed: 0,
             splitGradient: false,
             trueLeds: false,
             volume: 1,
@@ -1513,12 +1580,18 @@ const getInitialState = (): SettingsState => {
         id: item,
     }));
 
+    const freshArtistReleaseTypeItems = Object.values(ArtistReleaseTypeItem).map((item) => ({
+        disabled: false,
+        id: item,
+    }));
+
     // Deep clone using JSON to ensure all nested objects/arrays are fresh copies
     const clonedState = JSON.parse(JSON.stringify(initialState)) as SettingsState;
 
     // Replace arrays that need fresh references
     clonedState.general.homeItems = freshHomeItems;
     clonedState.general.artistItems = freshArtistItems;
+    clonedState.general.artistReleaseTypeItems = freshArtistReleaseTypeItems;
     clonedState.general.sidebarItems = JSON.parse(
         JSON.stringify(sidebarItems),
     ) as SidebarItemType[];
@@ -1571,6 +1644,11 @@ export const useSettingsStore = createWithEqualityFn<SettingsSlice>()(
                     setArtistItems: (items) => {
                         set((state) => {
                             state.general.artistItems = items;
+                        });
+                    },
+                    setArtistReleaseTypeItems: (items: SortableItem<ArtistReleaseTypeItem>[]) => {
+                        set((state) => {
+                            state.general.artistReleaseTypeItems = items;
                         });
                     },
                     setGenreBehavior: (target: GenreTarget) => {

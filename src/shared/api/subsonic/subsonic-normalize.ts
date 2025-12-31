@@ -123,6 +123,7 @@ const normalizeSong = (
         _serverId: server?.id || 'unknown',
         _serverType: ServerType.SUBSONIC,
         album: item.album || '',
+        albumArtistName: item.artist || '',
         albumArtists: getArtistList(item.albumArtists, item.artistId, item.artist),
         albumId: item.albumId?.toString() || '',
         artistName: item.artist || '',
@@ -226,6 +227,19 @@ const normalizeAlbumArtist = (
     };
 };
 
+const PRIMARY_RELEASE_TYPES = ['album', 'ep', 'single', 'broadcast', 'other'];
+
+const getReleaseType = (
+    item: z.infer<typeof ssType._response.album> | z.infer<typeof ssType._response.albumListEntry>,
+) => {
+    if (!item.releaseTypes) {
+        return null;
+    }
+
+    // Return the first primary release type
+    return item.releaseTypes.find((type) => PRIMARY_RELEASE_TYPES.includes(type)) || null;
+};
+
 const normalizeAlbum = (
     item: z.infer<typeof ssType._response.album> | z.infer<typeof ssType._response.albumListEntry>,
     server?: null | ServerListItemWithCredential,
@@ -234,7 +248,7 @@ const normalizeAlbum = (
         _itemType: LibraryItem.ALBUM,
         _serverId: server?.id || 'unknown',
         _serverType: ServerType.SUBSONIC,
-        albumArtist: item.artist,
+        albumArtistName: item.artist,
         albumArtists: getArtistList(item.artists, item.artistId, item.artist),
         artists: [],
         comment: null,
@@ -263,12 +277,9 @@ const normalizeAlbum = (
             typeof item.releaseDate.year === 'number' &&
             typeof item.releaseDate.month === 'number' &&
             typeof item.releaseDate.day === 'number'
-                ? new Date(
-                      item.releaseDate.year,
-                      item.releaseDate.month - 1,
-                      item.releaseDate.day,
-                  ).toISOString()
+                ? `${item.releaseDate.year}-${item.releaseDate.month}-${item.releaseDate.day}`
                 : null,
+        releaseType: getReleaseType(item),
         releaseTypes: item.releaseTypes || [],
         releaseYear: item.year || null,
         size: null,

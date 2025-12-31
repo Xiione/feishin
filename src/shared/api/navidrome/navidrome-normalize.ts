@@ -32,6 +32,22 @@ const normalizePlayDate = (item: WithDate): null | string => {
     return !item.playDate || item.playDate.includes('0001-') ? null : item.playDate;
 };
 
+const matchesFullDate = (date: string) => {
+    return Boolean(date.match(/^\d{4}-\d{2}-\d{2}$/));
+};
+
+const normalizeReleaseDate = (item: { date?: string; releaseDate?: string }) => {
+    if (item.releaseDate && matchesFullDate(item.releaseDate)) {
+        return item.releaseDate;
+    }
+
+    if (item.date && matchesFullDate(item.date)) {
+        return item.date;
+    }
+
+    return null;
+};
+
 const getArtists = (
     item:
         | z.infer<typeof ndType._response.album>
@@ -142,6 +158,7 @@ const normalizeSong = (
         _itemType: LibraryItem.SONG,
         _serverId: server?.id || 'unknown',
         _serverType: ServerType.NAVIDROME,
+        albumArtistName: item.albumArtist,
         artistName: item.artist,
         bitDepth: item.bitDepth || null,
         bitRate: item.bitRate,
@@ -192,7 +209,7 @@ const normalizeSong = (
                 : null,
         playCount: item.playCount || 0,
         playlistItemId,
-        releaseDate: item.releaseDate ? new Date(item.releaseDate).toISOString() : null,
+        releaseDate: normalizeReleaseDate(item),
         releaseYear: item.year || null,
         sampleRate: item.sampleRate || null,
         size: item.size,
@@ -257,7 +274,7 @@ const normalizeAlbum = (
         _itemType: LibraryItem.ALBUM,
         _serverId: server?.id || 'unknown',
         _serverType: ServerType.NAVIDROME,
-        albumArtist: item.albumArtist,
+        albumArtistName: item.albumArtist,
         comment: item.comment || null,
         createdAt: item.createdAt,
         duration: item.duration !== undefined ? item.duration * 1000 : null,
@@ -285,9 +302,10 @@ const normalizeAlbum = (
         lastPlayedAt: normalizePlayDate(item),
         mbzId: item.mbzAlbumId || null,
         name: item.name,
-        originalDate: item.originalDate ? new Date(item.originalDate).toISOString() : null,
+        originalDate: item.originalDate || null,
         playCount: item.playCount || 0,
-        releaseDate: item.releaseDate ? new Date(item.releaseDate).toISOString() : null,
+        releaseDate: normalizeReleaseDate(item),
+        releaseType: item.mbzAlbumType || null,
         releaseYear: item.maxYear || null,
         size: item.size,
         songCount: item.songCount,

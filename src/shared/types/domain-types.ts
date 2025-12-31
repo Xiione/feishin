@@ -91,6 +91,8 @@ export type ServerListItem = {
     musicFolderId?: string[];
     name: string;
     preferInstantMix?: boolean;
+    preferRemoteUrl?: boolean;
+    remoteUrl?: string;
     savePassword?: boolean;
     type: ServerType;
     url: string;
@@ -171,7 +173,7 @@ export type Album = {
     _itemType: LibraryItem.ALBUM;
     _serverId: string;
     _serverType: ServerType;
-    albumArtist: string;
+    albumArtistName: string;
     albumArtists: RelatedArtist[];
     artists: RelatedArtist[];
     comment: null | string;
@@ -191,6 +193,7 @@ export type Album = {
     playCount: null | number;
     recordLabels: string[];
     releaseDate: null | string;
+    releaseType: null | string;
     releaseTypes: string[];
     releaseYear: null | number;
     size: null | number;
@@ -224,15 +227,8 @@ export type AlbumArtist = {
     userRating: null | number;
 };
 
-export type Artist = {
+export type Artist = Omit<AlbumArtist, '_itemType'> & {
     _itemType: LibraryItem.ARTIST;
-    _serverId: string;
-    _serverType: ServerType;
-    biography: null | string;
-    createdAt: string;
-    id: string;
-    name: string;
-    updatedAt: string;
 };
 
 export type AuthenticationResponse = {
@@ -365,6 +361,7 @@ export type Song = {
     _serverId: string;
     _serverType: ServerType;
     album: null | string;
+    albumArtistName: string;
     albumArtists: RelatedArtist[];
     albumId: string;
     artistName: string;
@@ -1423,6 +1420,7 @@ export type GetQueueResponse = {
 };
 
 export type ImageArgs = BaseEndpointArgs & {
+    baseUrl?: string;
     query: ImageQuery;
 };
 
