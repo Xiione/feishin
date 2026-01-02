@@ -179,9 +179,10 @@
     },
     "pnpm": {
         "overrides": {
-            "node-abi": "3.76.0"
+            "node-abi": "4.24.0"
         },
         "onlyBuiltDependencies": [
+            "core-js",
             "electron",
             "esbuild"
         ]

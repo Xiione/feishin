@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  node-abi: 3.76.0
+  node-abi: 4.24.0
 
 importers:
 
@@ -4243,9 +4243,9 @@ packages:
     resolution: {integrity: sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg==}
     engines: {node: '>= 0.6'}
 
-  node-abi@3.76.0:
-    resolution: {integrity: sha512-vxPAUdXYJ2Vv8bUWSpbC/A4ltEdMYO4ruzMXrb99BbZz0IMmrt6xLhYirTIhOMk2dpsbjby+PZEhUkHIeMXM4g==}
-    engines: {node: '>=10'}
+  node-abi@4.24.0:
+    resolution: {integrity: sha512-u2EC1CeNe25uVtX3EZbdQ275c74zdZmmpzrHEQh2aIYqoVjlglfUpOX9YY85x1nlBydEKDVaSmMNhR7N82Qj8A==}
+    engines: {node: '>=22.12.0'}
 
   node-addon-api@1.7.2:
     resolution: {integrity: sha512-ibPK3iA+vaY1eEjESkQkM0BbCqFOaZMiXRTtdB0u7b4djtY6JnsjvPdUHVMg6xQt3B8fpTTWHI9A+ADjM9frzg==}
@@ -6976,7 +6976,7 @@ snapshots:
       detect-libc: 2.0.4
       fs-extra: 10.1.0
       got: 11.8.6
-      node-abi: 3.76.0
+      node-abi: 4.24.0
       node-api-version: 0.2.1
       ora: 5.4.1
       read-binary-file-arch: 1.0.6
@@ -10505,7 +10505,7 @@ snapshots:
 
   negotiator@1.0.0: {}
 
-  node-abi@3.76.0:
+  node-abi@4.24.0:
     dependencies:
       semver: 7.7.3
 
