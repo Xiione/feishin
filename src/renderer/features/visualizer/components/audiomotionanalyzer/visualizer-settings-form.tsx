@@ -1,4 +1,5 @@
 import butterchurnPresets from 'butterchurn-presets';
+import { nanoid } from 'nanoid';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -127,9 +128,7 @@ const useUpdateAudioMotionAnalyzer = () => {
     ) => {
         setSettings({
             visualizer: {
-                ...visualizer,
                 audiomotionanalyzer: {
-                    ...visualizer.audiomotionanalyzer,
                     [property]: value,
                 },
             },
@@ -149,9 +148,7 @@ const useUpdateButterchurn = () => {
     ) => {
         setSettings({
             visualizer: {
-                ...visualizer,
                 butterchurn: {
-                    ...visualizer.butterchurn,
                     [property]: value,
                 },
             },
@@ -177,7 +174,6 @@ export const VisualizerSettingsForm = () => {
     const handleTypeChange = (value: string) => {
         setSettings({
             visualizer: {
-                ...visualizer,
                 type: value as 'audiomotionanalyzer' | 'butterchurn',
             },
         });
@@ -390,14 +386,15 @@ const PresetSettings = () => {
     const { setSettings } = useSettingsStoreActions();
     const [selectedPreset, setSelectedPreset] = useState<null | string>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isRenaming, setIsRenaming] = useState(false);
     const [newPresetName, setNewPresetName] = useState('');
     const [isPasting, setIsPasting] = useState(false);
     const [pasteValue, setPasteValue] = useState('');
 
-    const applyPreset = (presetName: null | string) => {
-        if (!presetName) return;
+    const applyPreset = (presetId: null | string) => {
+        if (!presetId) return;
 
-        const preset = visualizer.audiomotionanalyzer.presets.find((p) => p.name === presetName);
+        const preset = visualizer.audiomotionanalyzer.presets.find((p) => p.id === presetId);
 
         if (!preset) return;
 
@@ -430,6 +427,7 @@ const PresetSettings = () => {
             mirror: 0.0,
             mode: 0,
             noteLabels: false,
+            opacity: 1,
             outlineBars: false,
             peakFadeTime: 750,
             peakHoldTime: 500,
@@ -462,9 +460,7 @@ const PresetSettings = () => {
 
         setSettings({
             visualizer: {
-                ...visualizer,
                 audiomotionanalyzer: {
-                    ...visualizer.audiomotionanalyzer,
                     ...presetValue,
                 },
             },
@@ -489,7 +485,7 @@ const PresetSettings = () => {
         if (existingPreset) {
             // Update existing preset
             const updatedPresets = visualizer.audiomotionanalyzer.presets.map((p) =>
-                p.name === newPresetName.trim()
+                p.id === existingPreset.id
                     ? {
                           ...p,
                           value: getCurrentSettingsAsPresetValue(),
@@ -499,34 +495,34 @@ const PresetSettings = () => {
 
             setSettings({
                 visualizer: {
-                    ...visualizer,
                     audiomotionanalyzer: {
-                        ...visualizer.audiomotionanalyzer,
                         presets: updatedPresets,
                     },
                 },
             });
+
+            setSelectedPreset(existingPreset.id);
         } else {
             // Add new preset
             const newPreset = {
+                id: nanoid(),
                 name: newPresetName.trim(),
                 value: getCurrentSettingsAsPresetValue(),
             };
 
             setSettings({
                 visualizer: {
-                    ...visualizer,
                     audiomotionanalyzer: {
-                        ...visualizer.audiomotionanalyzer,
                         presets: [...visualizer.audiomotionanalyzer.presets, newPreset],
                     },
                 },
             });
+
+            setSelectedPreset(newPreset.id);
         }
 
         setNewPresetName('');
         setIsSaving(false);
-        setSelectedPreset(newPresetName.trim());
     };
 
     const getCurrentSettingsAsPresetValue = () => {
@@ -536,6 +532,7 @@ const PresetSettings = () => {
             barSpace: visualizer.audiomotionanalyzer.barSpace,
             channelLayout: visualizer.audiomotionanalyzer.channelLayout,
             colorMode: visualizer.audiomotionanalyzer.colorMode,
+            customGradients: visualizer.audiomotionanalyzer.customGradients,
             fadePeaks: visualizer.audiomotionanalyzer.fadePeaks,
             fftSize: visualizer.audiomotionanalyzer.fftSize,
             fillAlpha: visualizer.audiomotionanalyzer.fillAlpha,
@@ -558,6 +555,7 @@ const PresetSettings = () => {
             mirror: visualizer.audiomotionanalyzer.mirror,
             mode: visualizer.audiomotionanalyzer.mode,
             noteLabels: visualizer.audiomotionanalyzer.noteLabels,
+            opacity: visualizer.audiomotionanalyzer.opacity,
             outlineBars: visualizer.audiomotionanalyzer.outlineBars,
             peakFadeTime: visualizer.audiomotionanalyzer.peakFadeTime,
             peakHoldTime: visualizer.audiomotionanalyzer.peakHoldTime,
@@ -584,12 +582,38 @@ const PresetSettings = () => {
     };
 
     const handleUpdatePreset = () => {
-        if (!selectedPreset) return;
+        if (!selectedPreset || !newPresetName.trim()) return;
+
+        const selectedPresetObj = visualizer.audiomotionanalyzer.presets.find(
+            (p) => p.id === selectedPreset,
+        );
+        if (!selectedPresetObj) return;
+
+        let trimmedName = newPresetName.trim();
+        const isRenaming = trimmedName !== selectedPresetObj.name;
+
+        if (isRenaming) {
+            const existingNames = visualizer.audiomotionanalyzer.presets
+                .filter((p) => p.id !== selectedPreset)
+                .map((p) => p.name);
+
+            if (existingNames.includes(trimmedName)) {
+                const pattern = /^(.+?)(\s+\((\d+)\))?$/;
+                const match = trimmedName.match(pattern);
+                const baseName = match ? match[1] : trimmedName;
+                let counter = 1;
+                while (existingNames.includes(`${baseName} (${counter})`)) {
+                    counter++;
+                }
+                trimmedName = `${baseName} (${counter})`;
+            }
+        }
 
         const updatedPresets = visualizer.audiomotionanalyzer.presets.map((p) =>
-            p.name === selectedPreset
+            p.id === selectedPreset
                 ? {
                       ...p,
+                      name: trimmedName,
                       value: getCurrentSettingsAsPresetValue(),
                   }
                 : p,
@@ -604,20 +628,21 @@ const PresetSettings = () => {
                 },
             },
         });
+
+        setNewPresetName('');
+        setIsRenaming(false);
     };
 
     const handleDeletePreset = () => {
         if (!selectedPreset) return;
 
         const updatedPresets = visualizer.audiomotionanalyzer.presets.filter(
-            (p) => p.name !== selectedPreset,
+            (p) => p.id !== selectedPreset,
         );
 
         setSettings({
             visualizer: {
-                ...visualizer,
                 audiomotionanalyzer: {
-                    ...visualizer.audiomotionanalyzer,
                     presets: updatedPresets,
                 },
             },
@@ -682,6 +707,7 @@ const PresetSettings = () => {
                 mirror: 0.0,
                 mode: 0,
                 noteLabels: false,
+                opacity: 1,
                 outlineBars: false,
                 peakFadeTime: 750,
                 peakHoldTime: 500,
@@ -706,16 +732,47 @@ const PresetSettings = () => {
                 weightingFilter: '' as const,
             };
 
+            const pastedCustomGradients = Array.isArray(parsed.customGradients)
+                ? parsed.customGradients
+                : [];
+
+            const parsedWithoutCustomGradients = { ...parsed };
+            delete parsedWithoutCustomGradients.customGradients;
+
+            // Determine the channel layout from the pasted config (or use default)
+            const pastedChannelLayout = parsed.channelLayout || initialDefaults.channelLayout;
+
+            // Get the gradient values that would be used based on channel layout
+            const gradientNamesToCheck: (string | undefined)[] = [];
+            if (pastedChannelLayout === 'single') {
+                gradientNamesToCheck.push(parsed.gradient);
+            } else {
+                gradientNamesToCheck.push(parsed.gradientLeft, parsed.gradientRight);
+            }
+
+            // Check if any of the gradient names match custom gradients in the pasted config
+            const pastedCustomGradientNames = pastedCustomGradients.map((g) => g.name);
+            const isUsingCustomGradient = gradientNamesToCheck.some(
+                (gradientName) => gradientName && pastedCustomGradientNames.includes(gradientName),
+            );
+
+            // Only append custom gradients if they're actually being used in the configuration
+            const customGradientsToUse = isUsingCustomGradient
+                ? [
+                      ...(visualizer.audiomotionanalyzer.customGradients || []),
+                      ...pastedCustomGradients,
+                  ]
+                : pastedCustomGradients;
+
             const configValue = {
                 ...initialDefaults,
-                ...parsed,
+                ...parsedWithoutCustomGradients,
+                customGradients: customGradientsToUse,
             };
 
             setSettings({
                 visualizer: {
-                    ...visualizer,
                     audiomotionanalyzer: {
-                        ...visualizer.audiomotionanalyzer,
                         ...configValue,
                     },
                 },
@@ -749,7 +806,7 @@ const PresetSettings = () => {
     const presetOptions = useMemo(() => {
         return visualizer.audiomotionanalyzer.presets.map((preset) => ({
             label: preset.name,
-            value: preset.name,
+            value: preset.id,
         }));
     }, [visualizer.audiomotionanalyzer.presets]);
 
@@ -792,6 +849,36 @@ const PresetSettings = () => {
                             </Button>
                         </Group>
                     </Group>
+                ) : isRenaming ? (
+                    <Group grow>
+                        <TextInput
+                            autoFocus
+                            label={t('visualizer.presetName')}
+                            onChange={(e) => setNewPresetName(e.currentTarget.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleUpdatePreset();
+                                } else if (e.key === 'Escape') {
+                                    setIsRenaming(false);
+                                    setNewPresetName('');
+                                }
+                            }}
+                            placeholder={t('visualizer.presetNamePlaceholder')}
+                            value={newPresetName}
+                        />
+                        <Group style={{ alignSelf: 'flex-end' }}>
+                            <Button onClick={() => setIsRenaming(false)} variant="subtle">
+                                {t('common.cancel', { postProcess: 'titleCase' })}
+                            </Button>
+                            <Button
+                                disabled={!newPresetName.trim()}
+                                onClick={handleUpdatePreset}
+                                variant="filled"
+                            >
+                                {t('common.save', { postProcess: 'titleCase' })}
+                            </Button>
+                        </Group>
+                    </Group>
                 ) : isPasting ? (
                     <Stack>
                         <Textarea
@@ -827,7 +914,18 @@ const PresetSettings = () => {
                         </Button>
                         {selectedPreset && (
                             <>
-                                <Button onClick={handleUpdatePreset} variant="default">
+                                <Button
+                                    onClick={() => {
+                                        const preset = visualizer.audiomotionanalyzer.presets.find(
+                                            (p) => p.id === selectedPreset,
+                                        );
+                                        if (preset) {
+                                            setNewPresetName(preset.name);
+                                            setIsRenaming(true);
+                                        }
+                                    }}
+                                    variant="default"
+                                >
                                     {t('visualizer.updatePreset')}
                                 </Button>
                                 <Button onClick={handleDeletePreset} variant="subtle">
@@ -1971,7 +2069,7 @@ const ButterchurnGeneralSettings = () => {
     const { updateProperty, visualizer } = useUpdateButterchurn();
 
     const presetOptions = useMemo(() => {
-        const presets = butterchurnPresets.getPresets();
+        const presets = butterchurnPresets;
         return Object.keys(presets).map((presetName) => ({
             label: presetName,
             value: presetName,
@@ -2027,7 +2125,7 @@ const ButterChurnCycleSettings = () => {
     const { updateProperty, visualizer } = useUpdateButterchurn();
 
     const presetOptions = useMemo(() => {
-        const presets = butterchurnPresets.getPresets();
+        const presets = butterchurnPresets;
         return Object.keys(presets).map((presetName) => ({
             label: presetName,
             value: presetName,

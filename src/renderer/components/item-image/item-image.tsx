@@ -7,6 +7,7 @@ import {
     getServerById,
     useAuthStore,
     useCurrentServerId,
+    useImageRes,
     useSettingsStore,
 } from '/@/renderer/store';
 import { BaseImage, ImageProps } from '/@/shared/components/image/image';
@@ -36,6 +37,7 @@ const BaseItemImage = (
         id?: null | string;
         itemType: LibraryItem;
         src?: null | string;
+        type?: keyof z.infer<typeof GeneralSettingsSchema>['imageRes'];
     },
 ) => {
     const { src, ...rest } = props;
@@ -44,7 +46,7 @@ const BaseItemImage = (
         id: props.id,
         imageUrl: src,
         itemType: props.itemType,
-        size: 300,
+        type: props.type,
     });
 
     return (
@@ -73,7 +75,7 @@ export const useItemImageUrl = (args: UseItemImageUrlProps) => {
     const { id, imageUrl, itemType, size, type, useRemoteUrl } = args;
     const serverId = useCurrentServerId();
 
-    const imageRes = useSettingsStore((store) => store.general.imageRes);
+    const imageRes = useImageRes();
     const sizeByType: number | undefined = type ? imageRes[type] : undefined;
 
     return useMemo(() => {
